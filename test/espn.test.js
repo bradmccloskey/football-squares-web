@@ -140,3 +140,48 @@ test('overtime: final uses the game total, not the 4th-quarter cumulative', () =
   assert.notDeepStrictEqual({ home: q4.home, away: q4.away }, e.finalScore(s), 'OT points must count');
   assert.deepStrictEqual(e.halftimeScore(s), { home: 7, away: 0 });
 });
+
+test('a genuinely live ESPN payload parses (captured at kickoff, 2026-09-20)', () => {
+  // Recorded from the real API while Steelers-Patriots was in progress.
+  const sb = fixture('scoreboard-live-kickoff.json');
+  const s = e.buildScore(e.findEvent(sb, 'Steelers', 'Patriots'), 'Steelers', 'Patriots');
+  assert.ok(s, 'live game parsed');
+  assert.strictEqual(s.state, 'in');
+  assert.ok(e.isLive(s));
+  assert.ok(!e.isFinal(s));
+  assert.strictEqual(s.period, 1);
+  assert.strictEqual(s.clock, '15:00');
+  assert.strictEqual(s.homeTeam, 'New England Patriots');
+  assert.strictEqual(s.awayTeam, 'Pittsburgh Steelers');
+  assert.strictEqual(e.halftimeScore(s), null, 'nothing decided in the first quarter');
+  assert.strictEqual(e.finalScore(s), null);
+});
+
+test('a live game whose linescores have not appeared yet still shows a square', () => {
+  // ESPN briefly serves an in-progress game with no linescores at all — seen on
+  // two games at the 1pm kickoff on 2026-09-20. The board must degrade to the
+  // running totals rather than break.
+  const sb = JSON.parse(JSON.stringify(fixture('scoreboard-live-kickoff.json')));
+  const comp = sb.events[0].competitions[0];
+  comp.competitors.forEach((c) => { delete c.linescores; });
+  comp.competitors.find((c) => c.team.abbreviation === 'NE').score = '7';
+  const s = e.buildScore(e.findEvent(sb, 'Steelers', 'Patriots'), 'Steelers', 'Patriots');
+  assert.ok(s);
+  assert.deepStrictEqual(s.quarterScores, [], 'no quarter detail available');
+  assert.strictEqual(s.homeTotal, 7, 'but the running total still works');
+  assert.strictEqual(e.halftimeScore(s), null, 'and halftime simply stays undecided');
+  assert.strictEqual(e.finalScore(s), null);
+});
+
+test('the current winning square is computed from the running totals alone', () => {
+  const p = require('../lib/pool');
+  const pool = p.loadPool();
+  const sb = JSON.parse(JSON.stringify(fixture('scoreboard-live-kickoff.json')));
+  const comp = sb.events[0].competitions[0];
+  comp.competitors.forEach((c) => { delete c.linescores; });
+  comp.competitors.find((c) => c.team.abbreviation === 'NE').score = '14';
+  comp.competitors.find((c) => c.team.abbreviation === 'PIT').score = '10';
+  const s = e.buildScore(e.findEvent(sb, 'Steelers', 'Patriots'), 'Steelers', 'Patriots');
+  const sq = p.winnerForScore(pool, pool.weeks['3'], s.homeTotal, s.awayTotal);
+  assert.ok(sq && sq.owner, 'a square is still identified with no linescores at all');
+});

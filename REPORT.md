@@ -78,13 +78,23 @@ bootstrapped and running with `KeepAlive`, bound to `0.0.0.0:8097`.
   resolve right now and report as scheduled with the right kickoff times, and
   that weeks 12, 17 and 18 render correctly in the app (7-game Thanksgiving
   week, and TBD games shown as TBD with no errors).
+- **Watched the real 1:00pm slate go live.** All seven afternoon games were
+  parsed from a genuinely live feed with zero failures: state `in`, period and
+  clock correct, the delay buffer filling and switching from `ready=false` to
+  `ready=true` after 15 seconds exactly as designed. The live payload is now a
+  test fixture (`scoreboard-live-kickoff.json`).
+- Found one real behaviour worth knowing: **ESPN briefly serves an in-progress
+  game with no `linescores` array at all** (two games at the 1pm kickoff). The
+  board degrades correctly — the running totals and the live winning square
+  still work, halftime simply stays undecided until the array appears a few
+  seconds later. There are now tests for that exact state.
 - Ran the real service on :8097 and checked it answers on loopback,
   `192.168.10.189`, `brads-mac-mini.tail28aaa3.ts.net` and the tailnet IP —
   `/api/health` and `/tv` are 200 on all four.
 - Drove both pages in a real browser at 1920x1080 and 390x844 and screenshotted
   them in pregame, mid-third-quarter and final states.
 
-**97 tests**, `npm test`, no network required — they run off the recorded
+**100 tests**, `npm test`, no network required — they run off the recorded
 fixtures. They cover the winning-square math and board orientation, pool-week
 boundaries and the December→January year rollover, the digit axes being a valid
 0–9 permutation in all 18 weeks, ESPN team matching (including a fixture with
