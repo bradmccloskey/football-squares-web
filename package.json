@@ -1,0 +1,16 @@
+{
+  "name": "football-squares-web",
+  "version": "1.0.0",
+  "private": true,
+  "type": "commonjs",
+  "description": "Live NFL squares board for Brad's pool — TV + phone control",
+  "main": "server.js",
+  "engines": { "node": ">=22" },
+  "scripts": {
+    "start": "node server.js",
+    "test": "node --test test/"
+  },
+  "dependencies": {
+    "express": "^4.21.2"
+  }
+}
