@@ -106,9 +106,13 @@
     document.getElementById('err').textContent = lastErr ? 'Last update failed: ' + lastErr : '';
   }
 
+  var inFlight = false;
   function tick() {
+    if (inFlight) return;   // never let slow responses pile up over a long evening
+    inFlight = true;
     S.getJSON('/api/live').then(function (snap) { lastErr = null; render(snap); })
-      .catch(function (e) { lastErr = String(e.message || e); var n = document.getElementById('err'); if (n) n.textContent = 'Last update failed: ' + lastErr; });
+      .catch(function (e) { lastErr = String(e.message || e); var n = document.getElementById('err'); if (n) n.textContent = 'Last update failed: ' + lastErr; })
+      .then(function () { inFlight = false; });
   }
   tick();
   setInterval(tick, 3000);

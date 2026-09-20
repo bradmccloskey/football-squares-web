@@ -188,9 +188,16 @@
     b.style.display = msg ? 'block' : 'none';
     b.textContent = msg || '';
   }
+  var inFlight = false, again = false;
   function tick() {
+    // Never pile up requests, but never drop one either: a tick asked for while
+    // another is in flight (e.g. right after changing the week) runs straight
+    // after, so a control change is always reflected.
+    if (inFlight) { again = true; return Promise.resolve(); }
+    inFlight = true;
     return S.getJSON('/api/live').then(function (s) { snap = s; banner(''); render(); })
-      .catch(function (e) { banner('Cannot reach the squares server: ' + (e.message || e)); });
+      .catch(function (e) { banner('Cannot reach the squares server: ' + (e.message || e)); })
+      .then(function () { inFlight = false; if (again) { again = false; tick(); } });
   }
 
   S.getJSON('/api/owners').then(function (r) { owners = r.owners; }).then(tick);
