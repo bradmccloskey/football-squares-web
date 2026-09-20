@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<title>Squares — TV</title>
+<link rel="stylesheet" href="/style.css">
+<style>
+  html, body { height: 100%; overflow: hidden; }
+  body { --cell: min(calc((100vh - 148px) / 11), calc((100vw - 880px) / 11)); }
+  #tv { height: 100vh; display: flex; flex-direction: column; padding: 10px 16px 12px; gap: 10px; }
+
+  header#hdr { display: flex; align-items: center; gap: 22px; flex: 0 0 auto; }
+  .teamscore { display: flex; align-items: baseline; gap: 14px; }
+  .tname { font-size: 34px; font-weight: 800; letter-spacing: .01em; }
+  .tnum { font-size: 66px; font-weight: 900; line-height: .95; }
+  .at { color: var(--dim); font-size: 26px; font-weight: 700; }
+  .clockbox { margin-left: auto; text-align: right; }
+  .clock { font-size: 44px; font-weight: 900; line-height: 1; }
+  .subline { color: var(--dim); font-size: 16px; margin-top: 4px; letter-spacing: .06em; }
+  .wk { font-size: 17px; font-weight: 800; color: var(--gold); letter-spacing: .12em; text-transform: uppercase; }
+
+  main { flex: 1 1 auto; display: flex; gap: 18px; min-height: 0; }
+  #boardpane { flex: 0 0 auto; }
+  aside { flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; gap: 12px; overflow: hidden; }
+  .card { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 12px 14px; }
+  .card h2 { margin: 0 0 8px; font-size: 14px; letter-spacing: .14em; text-transform: uppercase; color: var(--dim); font-weight: 800; }
+
+  .winrow { display: flex; gap: 10px; }
+  .winbox { flex: 1; background: var(--panel2); border-radius: 10px; padding: 10px 12px; border: 1px solid var(--line); }
+  .winbox .lab { font-size: 12px; letter-spacing: .14em; text-transform: uppercase; color: var(--dim); font-weight: 800; }
+  .winbox .who { font-size: 27px; font-weight: 900; margin-top: 2px; line-height: 1.05; }
+  .winbox .sc { font-size: 14px; color: var(--dim); margin-top: 2px; }
+  .winbox.h { border-color: #2f5e93; } .winbox.f { border-color: #6b4a8f; }
+
+  #tracked { flex: 1 1 auto; overflow: hidden; }
+  .trow { display: flex; align-items: center; gap: 10px; padding: 7px 0; border-bottom: 1px solid var(--line); }
+  .trow:last-child { border-bottom: 0; }
+  .swatch { width: 14px; height: 30px; border-radius: 4px; flex: 0 0 auto; }
+  .tname2 { font-size: 21px; font-weight: 800; min-width: 168px; }
+  .tsq { font-size: 17px; font-weight: 800; color: var(--gold); letter-spacing: .06em; }
+  .tstat { font-size: 16px; color: var(--dim); flex: 1 1 auto; }
+  .tstat.leading { color: var(--gold); font-weight: 800; }
+  .tstat.won { color: var(--live); font-weight: 800; }
+  .tmoney { font-size: 19px; font-weight: 900; margin-left: auto; }
+
+  .gamechip { display: flex; align-items: center; gap: 9px; font-size: 15px; padding: 5px 0; }
+  .gamechip .m { font-weight: 700; min-width: 190px; }
+  .gamechip.active .m { color: var(--gold); }
+  .stand { display: flex; flex-wrap: wrap; gap: 5px 16px; font-size: 15px; }
+  .stand span b { color: var(--gold); }
+  #err { color: #ff9b9b; font-size: 14px; }
+  .empty { color: var(--dim); font-size: 17px; padding: 8px 0; }
+</style>
+</head>
+<body>
+<div id="tv">
+  <header id="hdr"></header>
+  <main>
+    <div id="boardpane"><div id="board" class="gridwrap"></div></div>
+    <aside>
+      <div class="card"><h2>Winning squares</h2><div class="winrow" id="wins"></div></div>
+      <div class="card" id="tracked"><h2>Watching with us</h2><div id="tlist"></div></div>
+      <div class="card"><h2>This week</h2><div id="glist"></div></div>
+      <div class="card"><h2>Season winnings</h2><div class="stand" id="stand"></div><div id="err"></div></div>
+    </aside>
+  </main>
+</div>
+<script src="/common.js"></script>
+<script src="/tv.js"></script>
+</body>
+</html>

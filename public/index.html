@@ -1,0 +1,115 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<title>Squares</title>
+<link rel="stylesheet" href="/style.css">
+<style>
+  body { --cell: max(30px, calc((100vw - 26px) / 11)); padding: 0 0 40px; }
+  .wrap { max-width: 900px; margin: 0 auto; padding: 10px 12px env(safe-area-inset-bottom); }
+  @media (min-width: 760px) { body { --cell: 64px; } }
+
+  h1 { font-size: 19px; margin: 6px 0 2px; letter-spacing: .02em; }
+  h1 .sub { color: var(--dim); font-weight: 500; font-size: 13px; }
+  .card { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 12px; margin: 10px 0; }
+  .card h2 { margin: 0 0 9px; font-size: 11px; letter-spacing: .14em; text-transform: uppercase; color: var(--dim); font-weight: 800; }
+
+  .row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+  select, input[type=search], button {
+    font: inherit; color: var(--text); background: var(--panel2);
+    border: 1px solid var(--line); border-radius: 9px; padding: 9px 11px;
+    -webkit-appearance: none; appearance: none;
+  }
+  select { min-width: 132px; background-image: linear-gradient(45deg, transparent 50%, var(--dim) 50%), linear-gradient(135deg, var(--dim) 50%, transparent 50%); background-position: calc(100% - 16px) 50%, calc(100% - 11px) 50%; background-size: 5px 5px, 5px 5px; background-repeat: no-repeat; padding-right: 30px; }
+  button { cursor: pointer; font-weight: 700; }
+  button.primary { background: var(--gold); color: #12160c; border-color: var(--gold); }
+  button.ghost { background: transparent; }
+  input[type=range] { -webkit-appearance: none; appearance: none; height: 34px; background: transparent; flex: 1 1 140px; min-width: 140px; }
+  input[type=range]::-webkit-slider-runnable-track { height: 6px; background: var(--line); border-radius: 3px; }
+  input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; width: 30px; height: 30px; margin-top: -12px; border-radius: 50%; background: var(--gold); border: 0; }
+  .delayval { font-size: 25px; font-weight: 900; min-width: 74px; text-align: right; }
+
+  .scorehead { display: flex; align-items: baseline; gap: 9px; flex-wrap: wrap; }
+  .scorehead .t { font-size: 17px; font-weight: 800; }
+  .scorehead .n { font-size: 30px; font-weight: 900; }
+  .scorehead .st { margin-left: auto; font-size: 17px; font-weight: 800; }
+
+  .chipbar { display: flex; gap: 6px; flex-wrap: wrap; }
+  .chip { padding: 6px 10px; border-radius: 999px; border: 1px solid var(--line); background: var(--panel2); font-size: 13px; font-weight: 700; cursor: pointer; }
+  .chip.on { background: var(--gold); color: #12160c; border-color: var(--gold); }
+  .chip .x { color: #0009; margin-left: 5px; font-weight: 900; }
+
+  .tagrow { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 8px; }
+  .tag { display: inline-flex; align-items: center; gap: 6px; padding: 5px 9px; border-radius: 999px; font-size: 13px; font-weight: 700; color: #061018; }
+  .tag button { background: transparent; border: 0; color: #061018cc; font-weight: 900; padding: 0 2px; cursor: pointer; font-size: 15px; }
+  .results { max-height: 210px; overflow-y: auto; -webkit-overflow-scrolling: touch; border: 1px solid var(--line); border-radius: 9px; margin-top: 8px; }
+  .results div { padding: 10px 12px; border-bottom: 1px solid var(--line); font-size: 15px; cursor: pointer; }
+  .results div:last-child { border-bottom: 0; }
+  .results div.has { color: var(--dim); }
+
+  .tp { display: flex; align-items: center; gap: 9px; padding: 7px 0; border-bottom: 1px solid var(--line); font-size: 14px; }
+  .tp:last-child { border-bottom: 0; }
+  .tp .sw { width: 10px; height: 24px; border-radius: 3px; flex: 0 0 auto; }
+  .tp .nm { font-weight: 800; min-width: 92px; }
+  .tp .sq { color: var(--gold); font-weight: 800; }
+  .tp .de { color: var(--dim); flex: 1 1 auto; }
+  .tp .de.leading { color: var(--gold); font-weight: 800; }
+  .tp .de.won { color: var(--live); font-weight: 800; }
+  .tp .mn { font-weight: 800; margin-left: auto; }
+
+  #boardscroll { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+  .gl { display: flex; align-items: center; gap: 8px; font-size: 14px; padding: 5px 0; }
+  .gl .m { font-weight: 700; min-width: 150px; }
+  #tapinfo { font-size: 14px; color: var(--gold); font-weight: 700; min-height: 19px; }
+  .stand2 { display: flex; flex-wrap: wrap; gap: 4px 14px; font-size: 14px; }
+  #banner { display: none; background: #4a2b2b; color: #ffc9c9; padding: 8px 12px; border-radius: 9px; font-size: 14px; margin: 8px 0; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Squares <span class="sub" id="subtitle"></span></h1>
+  <div id="banner"></div>
+
+  <div class="card">
+    <h2>Week &amp; game</h2>
+    <div class="row">
+      <select id="week"></select>
+      <select id="game"></select>
+      <button class="ghost" id="nowbtn">Jump to now</button>
+      <a href="/tv" target="_blank" rel="noopener"><button class="ghost">Open TV view</button></a>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>TV delay</h2>
+    <div class="row">
+      <input type="range" id="delay" min="0" max="90" step="1" value="15">
+      <div class="delayval mono" id="delayval">15s</div>
+    </div>
+    <div class="dimtext" style="font-size:13px;margin-top:4px">Holds the score back so the square lights up when the play shows on the TV. Clock and quarter stay live.</div>
+  </div>
+
+  <div class="card">
+    <h2>Who's watching with us</h2>
+    <div class="tagrow" id="tags"></div>
+    <input type="search" id="search" placeholder="Search the 100 names…" autocomplete="off" autocorrect="off" spellcheck="false" style="width:100%">
+    <div class="results" id="results"></div>
+  </div>
+
+  <div class="card">
+    <div class="scorehead" id="scorehead"></div>
+    <div id="tapinfo"></div>
+    <div id="boardscroll"><div id="board" class="gridwrap" style="margin-top:8px"></div></div>
+  </div>
+
+  <div class="card"><h2>Tracked players</h2><div id="tplist"></div></div>
+  <div class="card"><h2>This week</h2><div id="glist"></div></div>
+  <div class="card"><h2>Season winnings</h2><div class="stand2" id="stand"></div></div>
+</div>
+<script src="/common.js"></script>
+<script src="/app.js"></script>
+</body>
+</html>
