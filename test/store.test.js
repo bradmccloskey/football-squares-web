@@ -7,7 +7,7 @@ const path = require('node:path');
 process.env.SQUARES_CACHE_DIR = fs.mkdtempSync(path.join(os.tmpdir(), 'squares-store-'));
 
 const p = require('../lib/pool');
-const { Store, LIVE_MS, IDLE_MS } = require('../lib/store');
+const { Store, LIVE_MS, IDLE_MS, FAR_MS } = require('../lib/store');
 const { scoreboard, fixture, fakeFetch } = require('./helpers');
 
 const pool = p.loadPool();
@@ -93,6 +93,12 @@ test('poll cadence tightens near kickoff and relaxes long before it', () => {
   const kickMs = Date.parse(kick);
   assert.strictEqual(s.intervalForDate(g.isoDate, [g], kickMs - 10 * 60 * 1000), LIVE_MS, '10 min out');
   assert.strictEqual(s.intervalForDate(g.isoDate, [g], kickMs - 3 * 60 * 60 * 1000), IDLE_MS, '3 hours out');
+  assert.strictEqual(s.intervalForDate(g.isoDate, [g], kickMs - 3 * 24 * 60 * 60 * 1000), FAR_MS, 'days out');
+});
+
+test('the live poll is fast enough that the delay slider is meaningful', () => {
+  // Revealed lag = slider + up to one poll interval. Keep that jitter small.
+  assert.ok(LIVE_MS <= 10000, 'live poll must be 10s or faster');
 });
 
 test('snapshot exposes everything the browser needs', async () => {
