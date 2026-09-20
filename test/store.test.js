@@ -132,3 +132,35 @@ test('this week\'s decided games are folded into the standings immediately', asy
   assert.ok(names.includes(g.final.owner), 'final winner is in the standings without a season refresh');
   assert.ok(names.includes(g.halftime.owner));
 });
+
+test('a square already counted by the season pass is not counted twice', async () => {
+  const s = newStore({ 20260920: fixture('synthetic-homeaway-swapped.json') });
+  s.setState({ week: 3, gameId: 'w3g0' });
+  await s.refresh();
+  const g = s.snapshot().games[0];
+  const winner = g.final.owner;
+  // Pretend the season pass has already recorded this game.
+  s.seasonData = {
+    results: { w3g0: { halftime: g.halftime, final: g.final } },
+    winnings: { [winner]: 150, [g.halftime.owner]: 150 },
+    errors: [], computedAt: Date.now(),
+  };
+  const row = s.snapshot().standings.find((x) => x.owner === winner);
+  assert.strictEqual(row.winnings, 150, 'counted once, not twice');
+});
+
+test('a game the season pass saw only half-finished still gets its final counted', async () => {
+  const s = newStore({ 20260920: fixture('synthetic-homeaway-swapped.json') });
+  s.setState({ week: 3, gameId: 'w3g0' });
+  await s.refresh();
+  const g = s.snapshot().games[0];
+  // Season pass ran at halftime: it recorded the halftime square but no final.
+  s.seasonData = {
+    results: { w3g0: { halftime: g.halftime, final: null } },
+    winnings: { [g.halftime.owner]: 150 },
+    errors: [], computedAt: Date.now(),
+  };
+  const stand = s.snapshot().standings;
+  assert.strictEqual(stand.find((x) => x.owner === g.halftime.owner).winnings, 150);
+  assert.strictEqual(stand.find((x) => x.owner === g.final.owner).winnings, 150, 'final still paid');
+});

@@ -35,7 +35,7 @@ html, body {
   position: relative; overflow: hidden;
   display: flex; align-items: center; justify-content: center; text-align: center;
   background: var(--panel); border-radius: 3px;
-  font-size: calc(var(--cell) * 0.155); line-height: 1.12;
+  font-size: max(5px, calc(var(--cell) * 0.155)); line-height: 1.1;
   padding: 1px; color: #c3cedb;
   word-break: break-word; hyphens: auto;
 }

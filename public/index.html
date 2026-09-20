@@ -6,9 +6,12 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <title>Squares</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 16 16%27%3E%3Crect width=%2716%27 height=%2716%27 fill=%27%230a0e14%27/%3E%3Cg fill=%27none%27 stroke=%27%23ffd23f%27 stroke-width=%271%27%3E%3Crect x=%272%27 y=%272%27 width=%2712%27 height=%2712%27/%3E%3Cpath d=%27M6 2v12M10 2v12M2 6h12M2 10h12%27/%3E%3C/g%3E%3Crect x=%276%27 y=%276%27 width=%274%27 height=%274%27 fill=%27%23ffd23f%27/%3E%3C/svg%3E">
 <link rel="stylesheet" href="/style.css">
 <style>
-  body { --cell: max(30px, calc((100vw - 26px) / 11)); padding: 0 0 40px; }
+  /* Fit all 11 columns on a phone without sideways scrolling: the grid is
+     11*cell + 12 gaps(2px) + 4px padding, inside 24px page + 24px card padding. */
+  body { --cell: max(22px, calc((100vw - 80px) / 11)); padding: 0 0 40px; }
   .wrap { max-width: 900px; margin: 0 auto; padding: 10px 12px env(safe-area-inset-bottom); }
   @media (min-width: 760px) { body { --cell: 64px; } }
 
@@ -63,7 +66,8 @@
   #boardscroll { overflow-x: auto; -webkit-overflow-scrolling: touch; }
   .gl { display: flex; align-items: center; gap: 8px; font-size: 14px; padding: 5px 0; }
   .gl .m { font-weight: 700; min-width: 150px; }
-  #tapinfo { font-size: 14px; color: var(--gold); font-weight: 700; min-height: 19px; }
+  #tapinfo { font-size: 14px; color: var(--gold); font-weight: 700; min-height: 20px; margin-top: 6px; }
+  .taphint { font-size: 12px; color: var(--dim); margin-top: 4px; }
   .stand2 { display: flex; flex-wrap: wrap; gap: 4px 14px; font-size: 14px; }
   #banner { display: none; background: #4a2b2b; color: #ffc9c9; padding: 8px 12px; border-radius: 9px; font-size: 14px; margin: 8px 0; }
 </style>
@@ -102,6 +106,7 @@
   <div class="card">
     <div class="scorehead" id="scorehead"></div>
     <div id="tapinfo"></div>
+    <div class="taphint">Tap any square to see whose it is.</div>
     <div id="boardscroll"><div id="board" class="gridwrap" style="margin-top:8px"></div></div>
   </div>
 

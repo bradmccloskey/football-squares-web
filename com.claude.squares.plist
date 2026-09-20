@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>Label</key>
+	<string>com.claude.squares</string>
+	<key>EnvironmentVariables</key>
+	<dict>
+		<key>PORT</key>
+		<string>8097</string>
+		<key>HOST</key>
+		<string>0.0.0.0</string>
+	</dict>
+	<key>ProgramArguments</key>
+	<array>
+		<string>/Users/claude/.nvm/versions/node/v25.6.1/bin/node</string>
+		<string>/Users/claude/projects/personal/football-squares-web/server.js</string>
+	</array>
+	<key>WorkingDirectory</key>
+	<string>/Users/claude/projects/personal/football-squares-web</string>
+	<key>RunAtLoad</key>
+	<true/>
+	<key>KeepAlive</key>
+	<true/>
+	<key>ThrottleInterval</key>
+	<integer>10</integer>
+	<key>StandardOutPath</key>
+	<string>/Users/claude/Library/Logs/squares.log</string>
+	<key>StandardErrorPath</key>
+	<string>/Users/claude/Library/Logs/squares.error.log</string>
+</dict>
+</plist>
