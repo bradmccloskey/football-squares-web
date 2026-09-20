@@ -68,16 +68,23 @@ bootstrapped and running with `KeepAlive`, bound to `0.0.0.0:8097`.
 - Confirmed the Saints–Lions overtime game on 9/13 scores correctly: five
   linescore entries, final taken from the game total (31-30) rather than the
   4th-quarter cumulative, halftime still 7-0.
+- **Resolved all 58 dated pool games across all 18 weeks against the live API —
+  58/58, zero failures**, including the January 2027 games in week 18. Every
+  matchup in the sheet is found by team name and parsed. This is repeatable:
+  `node scripts/verify-schedule.js` (exits non-zero if any game stops
+  resolving, and prints a note for any game where ESPN's home/away disagrees
+  with the sheet). The remaining 6 games are the TBD ones with no date yet.
 - Confirmed all three week 3 games (Colts–Chiefs, Giants–Rams, Falcons–Packers)
-  resolve against the live API right now and report as scheduled with the right
-  kickoff times.
+  resolve right now and report as scheduled with the right kickoff times, and
+  that weeks 12, 17 and 18 render correctly in the app (7-game Thanksgiving
+  week, and TBD games shown as TBD with no errors).
 - Ran the real service on :8097 and checked it answers on loopback,
   `192.168.10.189`, `brads-mac-mini.tail28aaa3.ts.net` and the tailnet IP —
   `/api/health` and `/tv` are 200 on all four.
 - Drove both pages in a real browser at 1920x1080 and 390x844 and screenshotted
   them in pregame, mid-third-quarter and final states.
 
-**87 tests**, `npm test`, no network required — they run off the recorded
+**89 tests**, `npm test`, no network required — they run off the recorded
 fixtures. They cover the winning-square math and board orientation, pool-week
 boundaries and the December→January year rollover, the digit axes being a valid
 0–9 permutation in all 18 weeks, ESPN team matching (including a fixture with
@@ -99,6 +106,11 @@ detection, the delay buffer, the season backfill and cache, and every HTTP route
   into `data/pool-2026.json` when the NFL schedules them — see the README. They
   are skipped cleanly until then. 58 of the 64 pool games have dates.
 - **No auth**, by design — LAN and tailnet only, first names only.
+- **The delay is the slider value plus up to one poll interval.** We can only
+  notice a score change at a poll, so a play that happens just after a poll is
+  revealed slightly later than the slider says. Live games are polled every 10
+  seconds, so a 15s setting behaves like 15–25s. Brad can just nudge the slider
+  until the square changes when the TV does.
 - **The delay says "syncing" for the first few seconds** after the server starts
   or the week changes, because the buffer has no sample old enough yet. It shows
   the freshest score it has rather than a blank board, and clears itself once the

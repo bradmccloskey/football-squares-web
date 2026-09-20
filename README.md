@@ -137,6 +137,7 @@ Two things the app is careful about, learned the hard way in the iOS version:
 ## Practising without a live game
 
 ```bash
+node scripts/verify-schedule.js  # check every game in the sheet still resolves
 node scripts/demo.js q3        # a third quarter in progress, on :8098
 node scripts/demo.js halftime  # halftime, square locked
 node scripts/demo.js final     # game over, both squares paid
