@@ -101,7 +101,8 @@
     h.appendChild(S.el('span', 'n mono', String(sc.home)));
     var st = S.el('span', 'st mono', S.statusText(g));
     h.appendChild(st);
-    if (g.hasData && !g.delayReady) h.appendChild(S.el('span', 'pill pre', 'syncing'));
+    if (g.syncing) h.appendChild(S.el('span', 'pill pre', 'syncing ' + g.syncSeconds + 's'));
+    if (g.stale) h.appendChild(S.el('span', 'pill warn', 'stale'));
     if (g.error) h.appendChild(S.el('span', 'pill warn', 'no feed'));
   }
 
@@ -195,7 +196,12 @@
     // after, so a control change is always reflected.
     if (inFlight) { again = true; return Promise.resolve(); }
     inFlight = true;
-    return S.getJSON('/api/live').then(function (s) { snap = s; banner(''); render(); })
+    return S.getJSON('/api/live').then(function (s) {
+      snap = s;
+      var n = S.noticeFor(s);
+      banner(n ? n.text : '');
+      render();
+    })
       .catch(function (e) { banner('Cannot reach the squares server: ' + (e.message || e)); })
       .then(function () { inFlight = false; if (again) { again = false; tick(); } });
   }

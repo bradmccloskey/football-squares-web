@@ -20,7 +20,7 @@ test('clampDelay pins the slider to 0-90 whole seconds', () => {
 
 test('empty buffer yields nothing', () => {
   const b = new DelayBuffer();
-  assert.deepStrictEqual(b.select(15, T0), { score: null, ready: false, ageMs: 0 });
+  assert.deepStrictEqual(b.select(15, T0), { score: null, ready: false, ageMs: 0, waitMs: 0 });
   assert.strictEqual(b.latest, null);
 });
 
@@ -60,14 +60,24 @@ test('reads are non-destructive, so the delay can be changed both ways', () => {
   assert.strictEqual(b.select(30, now).score.tag, 3, 'and back up again');
 });
 
-test('before the buffer has filled, it falls back to the oldest sample and says so', () => {
+test('before the buffer has filled it reports not-ready and how long is left', () => {
   const b = new DelayBuffer();
   b.push(S(3), T0);
   const r = b.select(15, T0 + 2_000);
-  assert.strictEqual(r.score.tag, 3);
-  assert.strictEqual(r.ready, false, 'caller should show a syncing hint');
+  assert.strictEqual(r.ready, false, 'the caller MUST hold this back — it is the live score');
+  assert.strictEqual(r.waitMs, 13_000, '13s still to wait');
   const r2 = b.select(15, T0 + 16_000);
   assert.strictEqual(r2.ready, true);
+  assert.strictEqual(r2.waitMs, 0);
+});
+
+test('waitMs shrinks as the buffer fills and never goes negative', () => {
+  const b = new DelayBuffer();
+  b.push(S(1), T0);
+  assert.strictEqual(b.select(30, T0).waitMs, 30_000);
+  assert.strictEqual(b.select(30, T0 + 10_000).waitMs, 20_000);
+  assert.strictEqual(b.select(30, T0 + 30_000).waitMs, 0);
+  assert.strictEqual(b.select(30, T0 + 60_000).waitMs, 0);
 });
 
 test('old samples are pruned but the buffer never empties', () => {

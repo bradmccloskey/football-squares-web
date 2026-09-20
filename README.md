@@ -111,12 +111,18 @@ replace the placeholders:
 ```
 becomes
 ```json
-["1/2", "Sat", "Jets", "Bills", "4:30 PM"]
+["1/9", "Sat", "Jets", "Bills", "4:30 PM"]
 ```
 
 The five fields are `[date "M/D", day-of-week, visitor, home, kickoff]`. Use the
 same `M/D` form as the other games — the app works out the year (anything from
-August on is 2026, January is 2027). Then restart:
+August on is 2026, January is 2027).
+
+**Put the date inside the right pool week.** A pool week runs from its Sunday
+through the following Saturday, so a game you add to week 18 has to fall between
+**1/3 and 1/9**; week 17 is 12/27–1/2, and week 16 is 12/20–12/26. Date it
+outside its week and the app will file it under the neighbouring week and you
+will not see it unless you pick that week by hand. Then restart:
 
 ```bash
 launchctl kickstart -k gui/$(id -u)/com.claude.squares
@@ -127,7 +133,7 @@ Nothing else needs changing; the digits for those weeks are already in the file.
 ## Where the scores come from
 
 ESPN's public scoreboard API (no key, no account). The server polls it every
-20 seconds while a game is live and every 5 minutes otherwise, and stops
+10 seconds while a game is live and every 5 minutes otherwise, and stops
 polling a date once every pool game on it is final. Finished games are cached
 in `data/cache/` and never re-fetched, so the season standings are computed
 once and then come off the disk.

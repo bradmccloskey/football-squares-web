@@ -33,6 +33,7 @@
     if (!g) return '';
     if (g.tbd) return 'Date TBD';
     if (g.error) return 'Score unavailable';
+    if (g.syncing) return 'SYNCING';
     if (g.state === 'pre') return g.statusDetail || ((g.dow || '') + ' ' + (g.start || ''));
     if (g.state === 'post') return g.period > 4 ? 'FINAL / OT' : 'FINAL';
     var q = g.period === 1 ? '1st' : g.period === 2 ? '2nd' : g.period === 3 ? '3rd' : g.period === 4 ? '4th' : g.period > 4 ? 'OT' : '';
@@ -71,7 +72,9 @@
       grid.appendChild(el('div', 'cell axis', String(digits.away[r])));
       for (var cc = 0; cc < 10; cc++) {
         var owner = snap.owners[r][cc];
-        var cell = el('div', 'cell', owner);
+        // Let shared squares wrap at the slash ("brooke/mike/larry") instead of
+        // mid-word ("brooke/mike/l arry") by offering a zero-width break there.
+        var cell = el('div', 'cell', owner.replace(/\//g, '/\u200B'));
         var cls = [];
         var t = overlay[r + ',' + cc];
         if (t) { cls.push('tracked'); cell.style.setProperty('--tc', t.color); }
@@ -98,9 +101,36 @@
   }
   function money(n) { return '$' + (n || 0).toLocaleString('en-US'); }
 
+  function clockTime(ms) {
+    return new Date(ms).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+  }
+
+  /**
+   * The one line that tells the room something is wrong (or that the board is
+   * deliberately holding back). Returns {cls, text} or null.
+   */
+  function noticeFor(snap) {
+    var games = snap.games || [];
+    var i, g;
+    for (i = 0; i < games.length; i++) {
+      g = games[i];
+      if (g.id === snap.activeGameId && g.syncing) {
+        return { cls: 'sync', text: 'Syncing with your TV — showing the score in ' + g.syncSeconds + 's' };
+      }
+    }
+    var espn = snap.espn || {};
+    var staleGame = null;
+    for (i = 0; i < games.length; i++) if (games[i].stale) staleGame = games[i];
+    if (staleGame || (espn.failing && espn.staleMs > 60000)) {
+      var since = espn.lastPoll ? clockTime(espn.lastPoll) : 'a while ago';
+      return { cls: 'warn', text: 'Scores stale since ' + since + ' — ESPN is not answering. The board is frozen, the pool is fine.' };
+    }
+    return null;
+  }
+
   w.SQ = {
     el: el, getJSON: getJSON, postJSON: postJSON, renderGrid: renderGrid,
     activeGame: activeGame, statusText: statusText, stateClass: stateClass,
-    esc: esc, money: money,
+    esc: esc, money: money, noticeFor: noticeFor, clockTime: clockTime,
   };
 })(window);

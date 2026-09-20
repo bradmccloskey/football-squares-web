@@ -2,3 +2,4 @@ node_modules/
 data/cache/*.json
 *.log
 .DS_Store
+data/state.json

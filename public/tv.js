@@ -6,12 +6,20 @@
 
   function render(snap) {
     var g = S.activeGame(snap);
+    renderNotice(snap);
     renderHeader(snap, g);
     S.renderGrid(document.getElementById('board'), snap, g);
     renderWins(g);
     renderTracked(snap);
     renderGames(snap);
     renderStandings(snap);
+  }
+
+  function renderNotice(snap) {
+    var n = document.getElementById('notice');
+    var notice = S.noticeFor(snap);
+    n.className = notice ? notice.cls : '';
+    n.textContent = notice ? notice.text : '';
   }
 
   function renderHeader(snap, g) {
@@ -30,7 +38,7 @@
     var right = S.el('div', 'clockbox');
     right.appendChild(S.el('div', 'clock mono', S.statusText(g)));
     var bits = ['Pool week ' + snap.state.week];
-    bits.push('delay ' + snap.state.delaySeconds + 's' + (g && g.hasData && !g.delayReady ? ' (syncing)' : ''));
+    bits.push('delay ' + snap.state.delaySeconds + 's');
     if (snap.mySquare) bits.push('brad mc ' + snap.mySquare.away + '-' + snap.mySquare.home + '  ' + S.money(snap.mySquare.winnings));
     right.appendChild(S.el('div', 'subline', bits.join('   •   ')));
     h.appendChild(right);
@@ -42,7 +50,7 @@
     w.appendChild(winBox('h', 'Halftime $150', g && g.halftime));
     w.appendChild(winBox('f', 'Final $150', g && g.final));
     var cur = S.el('div', 'winbox');
-    cur.appendChild(S.el('div', 'lab', 'On the board now'));
+    cur.appendChild(S.el('div', 'lab', 'On the board'));
     cur.appendChild(S.el('div', 'who', g && g.current ? g.current.owner : '—'));
     cur.appendChild(S.el('div', 'sc', g && g.score && g.state !== 'pre' ? g.score.away + ' - ' + g.score.home : 'not started'));
     w.appendChild(cur);

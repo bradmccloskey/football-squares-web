@@ -12,7 +12,7 @@ const { scoreboard, fixture, fakeFetch } = require('./helpers');
 
 const pool = p.loadPool();
 const W3 = { 20260920: fixture('scoreboard-20260920-pregame.json') };
-const newStore = (map = W3) => new Store(pool, { fetchImpl: fakeFetch(map) });
+const newStore = (map = W3) => { const s = new Store(pool, { fetchImpl: fakeFetch(map) }); s.persist = false; return s; };
 
 test('the store defaults to the current pool week', () => {
   const s = newStore();
@@ -44,12 +44,38 @@ test('setState accepts only real owner names and de-duplicates', () => {
   assert.deepStrictEqual(s.setState({ tracked: 'brad mc' }).tracked, [], 'non-array ignored');
 });
 
-test('changing the week clears the delay buffers from the old week', async () => {
+test('changing the week KEEPS the delay buffers — the delay must survive it', async () => {
+  // Clearing them let one tap on the week picker reveal a score before it
+  // reached the TV. Buffers are keyed by game id, unique across the season.
   const s = newStore();
   await s.refresh();
-  assert.ok(s.buffers.size > 0);
+  assert.ok(s.buffers.has('w3g0'));
+  const before = s.buffers.get('w3g0');
   s.setState({ week: 9 });
-  assert.strictEqual(s.live.size, 0, 'stale scores must not leak into the new week');
+  s.setState({ week: 3 });
+  assert.strictEqual(s.buffers.get('w3g0'), before, 'same buffer, same samples');
+  assert.ok(s.live.has('w3g0'), 'and the last known score is still there');
+});
+
+test('flipping away and back mid-game does not jump the board to the live score', async () => {
+  const s = newStore();
+  s.setState({ week: 3, delaySeconds: 60 });
+  const t = Date.now();
+  // Two samples 60s apart: an old 0-0 and a fresh one.
+  const buf = s.bufferFor('w3g0');
+  buf.push({ state: 'in', homeTotal: 0, awayTotal: 0, period: 1, clock: '9:00', statusName: 'STATUS_IN_PROGRESS', quarterScores: [] }, t - 90_000);
+  buf.push({ state: 'in', homeTotal: 14, awayTotal: 10, period: 2, clock: '5:03', statusName: 'STATUS_IN_PROGRESS', quarterScores: [] }, t);
+  s.live.set('w3g0', { state: 'in', homeTotal: 14, awayTotal: 10, period: 2, clock: '5:03', statusName: 'STATUS_IN_PROGRESS', quarterScores: [] });
+  s.lastGood.set('w3g0', t);
+
+  const before = s.snapshot(t).games[0];
+  assert.deepStrictEqual(before.score, { home: 0, away: 0 }, '60s behind, as asked');
+
+  s.setState({ week: 2 });
+  s.setState({ week: 3 });
+  const after = s.snapshot(t).games[0];
+  assert.deepStrictEqual(after.score, { home: 0, away: 0 }, 'still 60s behind after the round trip');
+  assert.strictEqual(after.delayReady, true);
 });
 
 test('refresh populates a score and a delay buffer for each game it finds', async () => {
@@ -171,20 +197,40 @@ test('a game the season pass saw only half-finished still gets its final counted
   assert.strictEqual(stand.find((x) => x.owner === g.final.owner).winnings, 150, 'final still paid');
 });
 
-test('a fetch still in flight when the week changes cannot pollute the new week', async () => {
+test('a fetch still in flight when the week changes lands safely under its own game id', async () => {
   let release;
   const gate = new Promise((r) => { release = r; });
   const s = new Store(pool, {
-    fetchImpl: async function (url) {
+    fetchImpl: async function () {
       await gate;
       return { ok: true, status: 200, json: async () => fixture('scoreboard-20260920-pregame.json') };
     },
   });
+  s.persist = false;
   s.setState({ week: 3 });
   const inFlight = s.refresh();      // starts fetching week 3
   s.setState({ week: 9 });           // Brad switches weeks mid-fetch
   release();
   await inFlight;
-  assert.ok(!s.live.has('w3g0'), 'week 3 data must not land after the switch');
+  // Now that buffers are keyed by game id this is not pollution: it is week 3's
+  // own score, waiting under w3g0 for whenever he switches back.
+  assert.ok(s.live.has('w3g0'));
   assert.strictEqual(s.state.week, 9);
+  assert.strictEqual(s.snapshot().games.length, pool.weeks['9'].games.length, 'week 9 is what renders');
+});
+
+test('the server never runs two ESPN refreshes at once', async () => {
+  let concurrent = 0, peak = 0;
+  const s = new Store(pool, {
+    fetchImpl: async function () {
+      concurrent++; peak = Math.max(peak, concurrent);
+      await new Promise((r) => setTimeout(r, 30));
+      concurrent--;
+      return { ok: true, status: 200, json: async () => fixture('scoreboard-20260920-pregame.json') };
+    },
+  });
+  s.persist = false;
+  s.setState({ week: 3 });
+  await Promise.all([s.refresh(), s.refresh(), s.refresh(), s.refresh()]);
+  assert.strictEqual(peak, 1, 'a slow ESPN must not cause request amplification');
 });

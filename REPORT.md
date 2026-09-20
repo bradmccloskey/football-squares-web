@@ -94,7 +94,7 @@ bootstrapped and running with `KeepAlive`, bound to `0.0.0.0:8097`.
 - Drove both pages in a real browser at 1920x1080 and 390x844 and screenshotted
   them in pregame, mid-third-quarter and final states.
 
-**100 tests**, `npm test`, no network required — they run off the recorded
+**123 tests**, `npm test`, no network required — they run off the recorded
 fixtures. They cover the winning-square math and board orientation, pool-week
 boundaries and the December→January year rollover, the digit axes being a valid
 0–9 permutation in all 18 weeks, ESPN team matching (including a fixture with
@@ -156,3 +156,95 @@ scripted game in real time on :8098 if you want to watch it happen.
 - The app never trusts ESPN's `homeAway` flags; the pool sheet's visitor/home
   orientation is resolved by team name, and a game whose second team does not
   match is refused outright rather than rendered transposed.
+
+---
+
+## Critic fixes (2026-09-20, after `CRITIC.md`)
+
+The review came back **PASS WITH FIXES** — the pool maths and the delay were
+independently re-derived and confirmed, with six things to fix. All six are done.
+
+**1. BLOCKER — `/tv` was only readable at exactly 1920x1080.** The sidebar
+reserved a fixed 880px, so on an iPad in landscape (the README's own first
+choice for getting it on the TV) the grid collapsed to a postage stamp. The
+sidebar is now proportional — the board takes 60% of the width or all the
+height it can get, whichever runs out first — and every type size scales with
+viewport height instead of being pinned in pixels.
+
+| | before | after |
+|---|---|---|
+| 1920x1080 TV | 85px cells, 13px names | **86px cells, 12.9px names** |
+| iPad Pro 11 (1194x834) | 29px cells, 5px names, board 28% of width | **66px cells, 9.9px names, board 61%** |
+| iPad 10.9 (1180x820) | 27px cells, 5px names, board 27% | **65px cells, 9.7px names, board 61%** |
+| iPad 9.7 (1024x768) | 13px cells, names clipped | **58px cells, 8.7px names, board 62%** |
+
+All four were screenshotted and looked at: no overflow in either direction, no
+clipped cells, no truncated labels. Shared squares now wrap at the slash
+("brooke/mike/ larry") instead of mid-word.
+
+**2. BLOCKER — a week change or a restart bypassed the delay.** Two separate
+holes, both fixed:
+
+- Changing the week called `buffers.clear()`, so the board fell back to the
+  newest sample and jumped to the live score. One tap on the week picker could
+  reveal a touchdown before it reached the TV. Buffers are keyed by game id,
+  which is unique across the season, so they are simply **no longer cleared** —
+  flipping to another week and back preserves the delay exactly.
+- On a restart the first sample *is* the live score, and the board showed it.
+  `ready=false` now means **hold everything back**: no score, no highlighted
+  square, no halftime or final winner, and a counting-down "Syncing with your
+  TV — showing the score in 12s" banner. The clock and quarter stay live so the
+  room can see the game is running. Pregame boards (0-0 cannot spoil anything)
+  and games that finished long before the restart are still shown instantly, so
+  browsing past weeks is not affected.
+
+Confirmed in production: restarted the service mid-afternoon against a live
+game, and the board withheld the score for 15 seconds, counting down, then
+showed it.
+
+**3. An ESPN outage was invisible.** `lastPoll` was stamped at the end of every
+tick whether or not a fetch succeeded, and `dateMeta.lastError` was captured and
+never exposed. Now only a **successful** fetch advances `lastPoll`; failures are
+recorded on `store.lastError`; the snapshot carries `espn.{lastPoll, lastError,
+staleMs, failing}`; a live game with no fresh score for over a minute is flagged
+`stale`; and both views show *"Scores stale since 1:42 — ESPN is not answering.
+The board is frozen, the pool is fine."* `/api/health` reports `lastError`,
+`espnFailing` and `lastPollAgoSeconds`, and flips `ok` to false after a minute
+of failures instead of reading green through an outage.
+
+**4. Nothing survived a restart.** Week, delay, tracked players and the pinned
+game are now written to `data/state.json` atomically (temp file then rename) on
+every change, and restored on start. A saved week is only restored if it was
+chosen within 12 hours — after a reboot days later the app opens on the week it
+actually is — but the delay and the tracked players always come back. Everything
+loads back through `setState`, so a corrupt or hand-edited file cannot put the
+store in a bad state.
+
+**5. `cumulativeQuarters` read only `linescores[].value`.** ESPN's summary
+endpoint ships `{displayValue:"7"}` with no `value`, which scored silently as
+0 — a wrong halftime square with no error. It now reads `value ?? displayValue`,
+carefully enough that a real `0` stays `0` rather than falling through.
+
+**6. The README's own TBD example was in the wrong week.** It told Brad to type
+`"1/2"` for a week-18 game, but week 18 starts 1/3, so the game would have been
+filed under week 17 and been invisible. The example is now `"1/9"`, and the
+README spells out the date range each of the three TBD weeks has to fall inside.
+There is a test that parses the README's example and asserts it lands in week 18,
+so the docs cannot drift out of sync with the code again.
+
+**Also fixed from the review's notes:** the server poll loop had no in-flight
+guard (a hanging ESPN caused ~2x request amplification — now strictly one
+refresh at a time); a garbage `delaySeconds` silently reset the delay to 0
+instead of keeping the current value, which would have quietly un-synced the TV;
+a malformed JSON body returned a stack trace in `squares.error.log` (now a clean
+`400`); and the README said ESPN was polled every 20s when it is 10s.
+
+**Not addressed** (noted, judged not worth the risk today): two phones editing
+the tracked list at once is last-write-wins per field. Nobody is editing from two
+phones mid-game, and the fix is a bigger change than tonight warrants.
+
+**23 new tests** cover fixes 2, 3, 4, 5 and 6 — including the restart-mid-game
+hold-back, the week round-trip preserving the delay, a failing ESPN not looking
+healthy, the state file surviving corrupt/hostile/missing input with no temp
+files left behind, `displayValue`-only linescores scoring halftime correctly,
+and the README example landing in week 18. **123 tests, all passing.**

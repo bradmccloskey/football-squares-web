@@ -9,55 +9,78 @@
 <link rel="stylesheet" href="/style.css">
 <style>
   html, body { height: 100%; overflow: hidden; }
-  body { --cell: min(calc((100vh - 148px) / 11), calc((100vw - 880px) / 11)); }
-  #tv { height: 100vh; display: flex; flex-direction: column; padding: 10px 16px 12px; gap: 10px; }
+  /*
+   * The board must stay the star at EVERY size this gets mirrored from, not
+   * just 1920x1080. Reserving a fixed sidebar width shrank the grid to a
+   * postage stamp on an iPad in landscape, so the sidebar is now proportional:
+   * the grid takes 60% of the width, or all the height it can get, whichever
+   * runs out first. Every type size scales with viewport height so the header
+   * and sidebar shrink with it instead of crowding the board out.
+   */
+  body {
+    --hdr-h: clamp(52px, 12.5vh, 135px);
+    --cell: min(calc((100vh - var(--hdr-h) - 26px) / 11), calc(100vw * 0.60 / 11));
+    --pad: clamp(6px, 1vh, 12px);
+  }
+  #tv { height: 100vh; display: flex; flex-direction: column; padding: var(--pad) clamp(8px, 1vw, 16px); gap: var(--pad); }
 
-  header#hdr { display: flex; align-items: center; gap: 22px; flex: 0 0 auto; }
-  .teamscore { display: flex; align-items: baseline; gap: 14px; }
-  .tname { font-size: 34px; font-weight: 800; letter-spacing: .01em; }
-  .tnum { font-size: 66px; font-weight: 900; line-height: .95; }
-  .at { color: var(--dim); font-size: 26px; font-weight: 700; }
-  .clockbox { margin-left: auto; text-align: right; }
-  .clock { font-size: 44px; font-weight: 900; line-height: 1; }
-  .subline { color: var(--dim); font-size: 16px; margin-top: 4px; letter-spacing: .06em; }
-  .wk { font-size: 17px; font-weight: 800; color: var(--gold); letter-spacing: .12em; text-transform: uppercase; }
+  header#hdr { display: flex; align-items: center; gap: clamp(10px, 1.6vw, 22px); flex: 0 0 auto; min-height: 0; }
+  .teamscore { display: flex; align-items: baseline; gap: clamp(6px, 1vw, 14px); min-width: 0; }
+  .tname { font-size: clamp(16px, 3.2vh, 34px); font-weight: 800; letter-spacing: .01em; white-space: nowrap; }
+  .tnum { font-size: clamp(30px, 6.2vh, 66px); font-weight: 900; line-height: .95; }
+  .at { color: var(--dim); font-size: clamp(12px, 2.4vh, 26px); font-weight: 700; }
+  .clockbox { margin-left: auto; text-align: right; min-width: 0; }
+  .clock { font-size: clamp(22px, 4.2vh, 44px); font-weight: 900; line-height: 1; white-space: nowrap; }
+  .subline { color: var(--dim); font-size: clamp(10px, 1.5vh, 16px); margin-top: 3px; letter-spacing: .05em; }
 
-  main { flex: 1 1 auto; display: flex; gap: 18px; min-height: 0; }
+  main { flex: 1 1 auto; display: flex; gap: clamp(8px, 1.1vw, 18px); min-height: 0; }
   #boardpane { flex: 0 0 auto; }
-  aside { flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; gap: 12px; overflow: hidden; }
-  .card { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 12px 14px; }
-  .card h2 { margin: 0 0 8px; font-size: 14px; letter-spacing: .14em; text-transform: uppercase; color: var(--dim); font-weight: 800; }
+  aside { flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; gap: var(--pad); overflow: hidden; }
+  .card { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: clamp(6px, 1vh, 12px) clamp(8px, 0.8vw, 14px); min-height: 0; }
+  .card h2 { margin: 0 0 clamp(4px, .7vh, 8px); font-size: clamp(9px, 1.3vh, 14px); letter-spacing: .13em; text-transform: uppercase; color: var(--dim); font-weight: 800; }
 
-  .winrow { display: flex; gap: 10px; }
-  .winbox { flex: 1; background: var(--panel2); border-radius: 10px; padding: 10px 12px; border: 1px solid var(--line); }
-  .winbox .lab { font-size: 12px; letter-spacing: .14em; text-transform: uppercase; color: var(--dim); font-weight: 800; }
-  .winbox .who { font-size: 27px; font-weight: 900; margin-top: 2px; line-height: 1.05; }
-  .winbox .sc { font-size: 14px; color: var(--dim); margin-top: 2px; }
+  .winrow { display: flex; gap: clamp(5px, .6vw, 10px); flex-wrap: wrap; }
+  .winbox { flex: 1 1 120px; min-width: 0; background: var(--panel2); border-radius: 9px; padding: clamp(5px, .8vh, 10px) clamp(7px, .6vw, 12px); border: 1px solid var(--line); }
+  .winbox .lab { font-size: clamp(8px, 1.15vh, 12px); letter-spacing: .12em; text-transform: uppercase; color: var(--dim); font-weight: 800; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .winbox .who { font-size: clamp(14px, 2.55vh, 27px); font-weight: 900; margin-top: 2px; line-height: 1.05; overflow-wrap: break-word; }
+  .winbox .sc { font-size: clamp(9px, 1.3vh, 14px); color: var(--dim); margin-top: 2px; }
   .winbox.h { border-color: #2f5e93; } .winbox.f { border-color: #6b4a8f; }
 
-  #tracked { flex: 1 1 auto; overflow: hidden; }
-  .trow { display: flex; align-items: center; gap: 10px; padding: 7px 0; border-bottom: 1px solid var(--line); }
+  #tracked { flex: 1 1 auto; overflow: hidden; display: flex; flex-direction: column; }
+  #tlist { overflow: hidden; }
+  .trow { display: flex; align-items: center; gap: clamp(5px, .6vw, 10px); padding: clamp(3px, .6vh, 7px) 0; border-bottom: 1px solid var(--line); }
   .trow:last-child { border-bottom: 0; }
-  .swatch { width: 14px; height: 30px; border-radius: 4px; flex: 0 0 auto; }
-  .tname2 { font-size: 21px; font-weight: 800; min-width: 168px; }
-  .tsq { font-size: 17px; font-weight: 800; color: var(--gold); letter-spacing: .06em; }
-  .tstat { font-size: 16px; color: var(--dim); flex: 1 1 auto; }
+  .swatch { width: clamp(7px, .7vw, 14px); height: clamp(16px, 2.9vh, 30px); border-radius: 3px; flex: 0 0 auto; }
+  .tname2 { font-size: clamp(12px, 2vh, 21px); font-weight: 800; min-width: clamp(84px, 13vw, 168px); overflow-wrap: break-word; }
+  .tsq { font-size: clamp(11px, 1.6vh, 17px); font-weight: 800; color: var(--gold); letter-spacing: .05em; white-space: nowrap; }
+  .tstat { font-size: clamp(10px, 1.5vh, 16px); color: var(--dim); flex: 1 1 auto; min-width: 0; }
   .tstat.leading { color: var(--gold); font-weight: 800; }
   .tstat.won { color: var(--live); font-weight: 800; }
-  .tmoney { font-size: 19px; font-weight: 900; margin-left: auto; }
+  .tmoney { font-size: clamp(11px, 1.8vh, 19px); font-weight: 900; margin-left: auto; white-space: nowrap; }
 
-  .gamechip { display: flex; align-items: center; gap: 9px; font-size: 15px; padding: 5px 0; }
-  .gamechip .m { font-weight: 700; min-width: 190px; }
+  .gamechip { display: flex; align-items: center; gap: clamp(5px, .5vw, 9px); font-size: clamp(10px, 1.4vh, 15px); padding: clamp(2px, .4vh, 5px) 0; }
+  .gamechip .m { font-weight: 700; min-width: clamp(96px, 14vw, 190px); }
   .gamechip.active .m { color: var(--gold); }
-  .stand { display: flex; flex-wrap: wrap; gap: 5px 16px; font-size: 15px; }
+  .stand { display: flex; flex-wrap: wrap; gap: clamp(2px, .4vh, 5px) clamp(8px, 1vw, 16px); font-size: clamp(10px, 1.4vh, 15px); overflow: hidden; }
   .stand span b { color: var(--gold); }
-  #err { color: #ff9b9b; font-size: 14px; }
-  .empty { color: var(--dim); font-size: 17px; padding: 8px 0; }
+  #err { color: #ff9b9b; font-size: clamp(10px, 1.3vh, 14px); }
+  .empty { color: var(--dim); font-size: clamp(11px, 1.6vh, 17px); padding: 6px 0; }
+
+  /* ESPN has gone quiet / the board is holding back until the delay elapses */
+  #notice { display: none; flex: 0 0 auto; padding: clamp(4px, .7vh, 9px) clamp(8px, .8vw, 14px); border-radius: 9px;
+            font-size: clamp(11px, 1.7vh, 18px); font-weight: 800; letter-spacing: .03em; }
+  #notice.warn { display: block; background: #4a2b2b; color: #ffc9c9; }
+  #notice.sync { display: block; background: #2b3a4a; color: #bfe0ff; }
+
+  /* Shorter than an iPad in landscape: drop the least important cards. */
+  @media (max-height: 700px) { #glist, .stand { font-size: clamp(9px, 1.3vh, 13px); } }
+  @media (max-height: 560px) { aside .card:nth-last-child(1) { display: none; } }
 </style>
 </head>
 <body>
 <div id="tv">
   <header id="hdr"></header>
+  <div id="notice"></div>
   <main>
     <div id="boardpane"><div id="board" class="gridwrap"></div></div>
     <aside>
