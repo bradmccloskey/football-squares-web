@@ -17,8 +17,6 @@
   function renderHeader(snap, g) {
     var h = document.getElementById('hdr');
     h.innerHTML = '';
-    var away = (g && g.awayAbbr) || (g && g.visitor) || '';
-    var home = (g && g.homeAbbr) || (g && g.home) || '';
     var sc = (g && g.score) || { home: '-', away: '-' };
 
     var box = S.el('div', 'teamscore');
