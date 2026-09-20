@@ -170,3 +170,21 @@ test('a game the season pass saw only half-finished still gets its final counted
   assert.strictEqual(stand.find((x) => x.owner === g.halftime.owner).winnings, 150);
   assert.strictEqual(stand.find((x) => x.owner === g.final.owner).winnings, 150, 'final still paid');
 });
+
+test('a fetch still in flight when the week changes cannot pollute the new week', async () => {
+  let release;
+  const gate = new Promise((r) => { release = r; });
+  const s = new Store(pool, {
+    fetchImpl: async function (url) {
+      await gate;
+      return { ok: true, status: 200, json: async () => fixture('scoreboard-20260920-pregame.json') };
+    },
+  });
+  s.setState({ week: 3 });
+  const inFlight = s.refresh();      // starts fetching week 3
+  s.setState({ week: 9 });           // Brad switches weeks mid-fetch
+  release();
+  await inFlight;
+  assert.ok(!s.live.has('w3g0'), 'week 3 data must not land after the switch');
+  assert.strictEqual(s.state.week, 9);
+});
