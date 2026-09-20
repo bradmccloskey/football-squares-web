@@ -115,6 +115,10 @@ scripted game in real time on :8098 if you want to watch it happen.
   into `data/pool-2026.json` when the NFL schedules them — see the README. They
   are skipped cleanly until then. 58 of the 64 pool games have dates.
 - **No auth**, by design — LAN and tailnet only, first names only.
+- **The page cannot keep the iPad awake by itself.** The screen wake-lock API
+  needs HTTPS and this serves plain HTTP on the LAN, so the call is a no-op
+  (it fails safely, no error). Auto-Lock has to be set to Never on the iPad
+  before mirroring, or it will sleep mid-game — this is in the README.
 - **The delay is the slider value plus up to one poll interval.** We can only
   notice a score change at a poll, so a play that happens just after a poll is
   revealed slightly later than the slider says. Live games are polled every 10

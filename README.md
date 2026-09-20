@@ -27,6 +27,13 @@ Two ways, either is fine:
    on the iPad, tap the **aA** button in the address bar → **Hide Toolbar**, then
    swipe down from the top-right corner → **Screen Mirroring** → pick the Apple TV.
    Rotate the iPad to landscape. The board fills the screen.
+
+   **Turn off Auto-Lock first** — Settings → Display & Brightness → Auto-Lock →
+   **Never**. Otherwise the iPad sleeps partway through the game and mirroring
+   stops. (A web page can normally hold the screen awake by itself, but only
+   over HTTPS, and this runs over plain HTTP on the LAN. Set it back to 5
+   minutes afterwards.) For an even cleaner look, tap Share → **Add to Home
+   Screen** and launch it from there — it opens full screen with no toolbar.
 2. **Open it on the TV directly.** If the TV has a browser (or a Mac/Apple TV with
    one), go to `http://192.168.10.189:8097/tv`. It is laid out for 1920x1080.
 
