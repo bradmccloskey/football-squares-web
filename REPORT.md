@@ -84,12 +84,21 @@ bootstrapped and running with `KeepAlive`, bound to `0.0.0.0:8097`.
 - Drove both pages in a real browser at 1920x1080 and 390x844 and screenshotted
   them in pregame, mid-third-quarter and final states.
 
-**89 tests**, `npm test`, no network required — they run off the recorded
+**97 tests**, `npm test`, no network required — they run off the recorded
 fixtures. They cover the winning-square math and board orientation, pool-week
 boundaries and the December→January year rollover, the digit axes being a valid
 0–9 permutation in all 18 weeks, ESPN team matching (including a fixture with
 the home/away flags deliberately flipped), cumulative quarters, halftime/final/OT
 detection, the delay buffer, the season backfill and cache, and every HTTP route.
+
+Eight of them are an end-to-end proof of the delay: a scripted game is fed
+through the real poll loop at controlled times, and the tests assert that the
+board shows the score from N seconds ago while the clock stays current, that
+sliding the delay up and back down works over the same buffer, that the
+winning square follows the delayed score rather than the live one, and that
+the halftime winner is **not** revealed until the delay has elapsed even though
+ESPN has already said "halftime". `node scripts/demo.js replay` runs the same
+scripted game in real time on :8098 if you want to watch it happen.
 
 ## Known gaps
 

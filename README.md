@@ -141,6 +141,8 @@ node scripts/verify-schedule.js  # check every game in the sheet still resolves
 node scripts/demo.js q3        # a third quarter in progress, on :8098
 node scripts/demo.js halftime  # halftime, square locked
 node scripts/demo.js final     # game over, both squares paid
+node scripts/demo.js replay    # a whole game in ~4 min, score changing every 20s
+                               #   — set the delay slider and watch it lag
 ```
 
 Then open `http://127.0.0.1:8098/tv`. It replays tonight's game from a recorded
