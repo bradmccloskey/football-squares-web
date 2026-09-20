@@ -108,3 +108,117 @@ you pick week 18 by hand.
 
 **PASS WITH FIXES** — the money is right and the delay works. Fix #1 and #2 before kickoff, or
 drive the TV from a real 1920x1080 browser and do not touch the week picker after 8:20pm.
+
+---
+
+# Round 2 — 2026-09-20 ~1:40pm ET
+
+Re-review of the six round-1 fixes. Everything below was executed. Service left as found:
+week 3, delay 15, tracked = `brad mc`. No repo files changed except this section.
+
+## 1 — /tv at four sizes: **FIXED**
+
+Headless Chrome screenshots at 1920x1080, 1194x834, 1180x820, 1024x768, each one looked at,
+plus playwright layout measurement:
+
+| viewport | cell | name font | board % of width | clipped cells | page scroll |
+|---|---|---|---|---|---|
+| 1920x1080 | 83.5px | 12.9px | 49% (height-bound) | 0 | none |
+| 1194x834  | 64.0px | ~9.9px | **61%** | 0 | none |
+| 1180x820  | 63.3px | ~9.7px | **61%** | 0 | none |
+| 1024x768  | 55.9px | ~8.7px | **62%** | 0 | none |
+
+Names legible at all four, `brooke/mike/ larry` wraps at the slash, Brad's orange outline
+visible at row 8 every time, banner text readable. Round-1's postage-stamp grid is gone.
+
+## 2 — delay survives a week change and a cold start: **FIXED**
+
+`node scripts/demo.js replay` on :8098, delay 45:
+
+```
+t=  0 shown=--   Q1 10:22 syncing=true  syncS=17   <- cold start holds EVERYTHING back
+t= 15 shown=--   Q1  3:09 syncing=true  syncS=2
+t= 18 shown=0-0  Q1  3:09 syncing=false             <- revealed only after the delay
+t= 30 shown=0-0 ... >>> flipped to week 2 and back to week 3
+t= 36 shown=0-0  Q2 12:41 syncing=false             <- NO jump; still 45s behind
+t= 39 shown=0-7  Q2 12:41   t=60 shown=7-7   t=78 shown=7-14   t=105 shown=10-14
+```
+
+Cold-start path verified live, not just read: `board.describeGame` returns `score=null,
+current=null, halftime=null, final=null` while `ready=false` and a counting-down banner.
+`data/state.json` + the 13:24 boot line agree (`restored state: week=… delay=… tracked=…`).
+
+## 3 — ESPN outage signal: **FIXED**
+
+No env knob to kill the fetch, so: `npm test` (123/123, incl. the four FIX-3 tests) plus a
+live harness — real `server.js` on :8099 with a throwing `fetchImpl` and an aged buffer:
+
+```
+HEALTHY  health.ok=true  failing=false lastError=null agoS=0
+DOWN 3m  health.ok=false failing=true  lastError=ENOTFOUND agoS=180  game.stale={ms:180002}
+DOWN 3m  banner -> "Scores stale since 1:32 PM — ESPN is not answering. The board is frozen,
+                    the pool is fine."
+```
+
+`noticeFor()` is shared, so both views show it (`#notice` on /tv, `#banner` in app.js).
+
+## 4 — BLOCKER (new): **any second Store overwrites the live `data/state.json`**
+
+`scripts/demo.js` sets `SQUARES_CACHE_DIR` but not `SQUARES_STATE_FILE`, and it `require`s the
+real `server.js`, so its `setState` writes the production state file:
+
+```
+prod :8097  -> {"week":3,"delaySeconds":15,"tracked":["brad mc"]}
+node scripts/demo.js replay   (the README tells Brad to run this)
+data/state.json -> {"week":3,"delaySeconds":15,"tracked":[6 demo names],"gameId":"w3g0"}
+```
+
+This already happened in production: at the start of this review the file held **week 5, delay
+90, tracked 0** while the service ran week 3 / 15 / brad mc, and `squares.log` contains
+`[squares] restored state: week=5 delay=90s tracked=0`. One KeepAlive restart during tonight's
+game and the TV comes back **on the wrong week with the delay changed** — precisely what fix #4
+existed to prevent. One-line fix: set `SQUARES_STATE_FILE` in `scripts/demo.js` (and in any
+throwaway harness). File restored to week 3 / 15 / `brad mc` at the end of this review.
+
+Otherwise fix #4 is sound: POST → file updated atomically, valid JSON, `.tmp` cleaned up,
+malformed body → 400 with an empty `squares.error.log`, and the 12-hour rule executes as
+documented (saved 1h/11.9h ago → week 9 restored; 12.1h/48h ago → week 9 dropped, delay and
+tracked still restored).
+
+## 5 — `cumulativeQuarters` displayValue fallback: **FIXED**
+
+```
+displayValue-only -> [{q1,0,0},{q2,home:0,away:7}]   (round 1 returned away:0)
+value 0 + displayValue mix -> {home:3,away:7}        (a real 0 stays 0)
+junk ("x", {}) -> 0, never NaN
+```
+
+## 6 — README TBD example: **FIXED**
+
+`1/9` lands in week 18; the test regex-parses README.md itself, so the doc cannot drift.
+
+## Also checked
+
+- 10 random (week, score) pairs through `pool.winnerForScore` vs hand-indexed `pool-2026.json`
+  — 0 mismatches. 100 cells, 100 distinct owners, `brad mc` once at [7][4] (8-4 in week 3).
+- Season standings still total exactly **$1,500** across 9 owners; brad mc $150, bill 3 $300.
+- Tonight resolves to **ESPN event 401872945** (Colts at Chiefs, `pre`, "9/20 - 8:20 PM EDT")
+  and /tv shows pregame: 0-0, "not started", halftime/final "not yet".
+- `npm test` 123/123. `squares.error.log` still 0 bytes.
+
+## NOTE
+
+- A restart inside the delay window **just after** a game goes final reveals the final square
+  instantly (`describeGame` holds back only `state === 'in'`; it cannot tell "finished 2s ago"
+  from "finished last week"). Narrow, but tonight has KeepAlive.
+- The `--cell` formula reserves 26px of chrome and ignores `#notice`; with the banner showing
+  the grid clears the viewport bottom by only 3-4px at 1194x834 and 1920x1080. It does not
+  clip today (the banner is height-clamped even at 3 lines), but there is no margin left.
+- The phone's `#banner` is styled red-on-dark-red for every notice, including the benign
+  "Syncing with your TV" one.
+
+---
+
+**PASS WITH FIXES** — all six round-1 findings are genuinely fixed and independently
+re-verified. One new blocker before kickoff: stop `scripts/demo.js` writing the live
+`data/state.json`, and check the file says week 3 / delay 15 / `brad mc` before 8:20pm.

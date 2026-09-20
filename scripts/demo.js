@@ -16,6 +16,8 @@ const fs = require('fs');
 const os = require('os');
 const path = require('path');
 process.env.SQUARES_CACHE_DIR = fs.mkdtempSync(path.join(os.tmpdir(), 'squares-demo-'));
+// Never let the demo touch the live shared state (critic round 2 blocker 4): keep its state file in the temp dir.
+process.env.SQUARES_STATE_FILE = path.join(process.env.SQUARES_CACHE_DIR, 'state.json');
 
 const MODES = { halftime: 'synthetic-halftime.json', q3: 'synthetic-q3.json', final: 'synthetic-homeaway-swapped.json', replay: 'synthetic-q3.json' };
 const mode = process.argv[2] || 'q3';
