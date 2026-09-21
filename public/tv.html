@@ -9,6 +9,19 @@
 <link rel="stylesheet" href="/style.css">
 <style>
   html, body { height: 100%; overflow: hidden; }
+  /* 9/21: on a phone the fixed TV layout clips and cannot scroll at all. Under 760px wide
+     let the page grow and scroll like a normal page; the TV keeps the one-screen layout. */
+  @media (max-width: 760px) {
+    html, body { height: auto; overflow: visible; overflow-x: clip; touch-action: pan-y pinch-zoom; }
+    body { --cell: calc((100vw - 32px) / 11); }
+    #tv { height: auto; min-height: 100vh; }
+    main { flex-direction: column; }
+    #boardpane { flex: 0 0 auto; max-width: 100%; }
+    aside, #tracked, #tlist, .stand { overflow: visible; }
+    .trow { flex-wrap: wrap; }
+    .tname2 { min-width: 0; }
+    .tstat { flex-basis: 100%; }
+  }
   /*
    * The board must stay the star at EVERY size this gets mirrored from, not
    * just 1920x1080. Reserving a fixed sidebar width shrank the grid to a
