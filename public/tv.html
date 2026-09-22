@@ -9,19 +9,6 @@
 <link rel="stylesheet" href="/style.css">
 <style>
   html, body { height: 100%; overflow: hidden; }
-  /* 9/21: on a phone the fixed TV layout clips and cannot scroll at all. Under 760px wide
-     let the page grow and scroll like a normal page; the TV keeps the one-screen layout. */
-  @media (max-width: 760px) {
-    html, body { height: auto; overflow: visible; overflow-x: clip; touch-action: pan-y pinch-zoom; }
-    body { --cell: calc((100vw - 32px) / 11); }
-    #tv { height: auto; min-height: 100vh; }
-    main { flex-direction: column; }
-    #boardpane { flex: 0 0 auto; max-width: 100%; }
-    aside, #tracked, #tlist, .stand { overflow: visible; }
-    .trow { flex-wrap: wrap; }
-    .tname2 { min-width: 0; }
-    .tstat { flex-basis: 100%; }
-  }
   /*
    * The board must stay the star at EVERY size this gets mirrored from, not
    * just 1920x1080. Reserving a fixed sidebar width shrank the grid to a
@@ -87,7 +74,34 @@
 
   /* Shorter than an iPad in landscape: drop the least important cards. */
   @media (max-height: 700px) { #glist, .stand { font-size: clamp(9px, 1.3vh, 13px); } }
-  @media (max-height: 560px) { aside .card:nth-last-child(1) { display: none; } }
+  @media (max-height: 560px) and (min-width: 761px) { aside .card:nth-last-child(1) { display: none; } }
+  /* Phone layout LAST so it wins the cascade over the base rules above (equal specificity).
+     9/21: on a phone the fixed TV layout clips and cannot scroll at all. Under 760px wide
+     let the page grow and scroll like a normal page; the TV keeps the one-screen layout. */
+  @media (max-width: 760px) {
+    html, body { height: auto; overflow: visible; overflow-x: clip; touch-action: pan-y pinch-zoom; }
+    body { --cell: calc((100vw - 32px) / 11); }
+    /* 9/21 9:50pm: block flow, not flex. With flex the page stayed one screen tall and the
+       cards shrank into each other; the header crammed the score into the clock. */
+    #tv { display: block; height: auto; min-height: 0; padding: 10px 8px 24px; }
+    header#hdr { display: flex; flex-wrap: wrap; gap: 2px 12px; margin-bottom: 10px; }
+    .teamscore { flex: 1 1 100%; gap: 8px; }
+    .teamscore .tname { font-size: 22px; }
+    .teamscore .tnum { font-size: 40px; }
+    .teamscore .at { font-size: 14px; }
+    .clockbox { flex: 1 1 100%; margin-left: 0; text-align: left; display: flex; align-items: baseline; gap: 6px 12px; flex-wrap: wrap; }
+    .clock { font-size: 26px; }
+    .subline { font-size: 13px; margin-top: 0; }
+    #notice { margin-bottom: 10px; }
+    main { display: block; }
+    #boardpane { max-width: 100%; margin-bottom: 10px; }
+    aside { display: block; overflow: visible; }
+    .card { margin-bottom: 10px; overflow: visible; }
+    #tracked, #tlist, .stand { display: block; overflow: visible; }
+    .trow { flex-wrap: wrap; }
+    .tname2 { min-width: 0; }
+    .tstat { flex-basis: 100%; }
+  }
 </style>
 </head>
 <body>
