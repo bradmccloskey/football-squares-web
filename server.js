@@ -21,6 +21,23 @@ app.use((err, req, res, next) => {
 });
 app.use((req, res, next) => { res.set('Cache-Control', 'no-store'); next(); });
 
+// Shared password for the public hostname. Only requests that arrived through
+// the Cloudflare tunnel carry a cf-ray header, so the LAN, the tailnet and the
+// basement iPad keep working without a prompt. Any username is accepted.
+const PUBLIC_PASSWORD = process.env.SQUARES_PASSWORD || '';
+function publicAuth(req, res, next) {
+  if (!PUBLIC_PASSWORD || !req.get('cf-ray')) return next();
+  const h = req.get('authorization') || '';
+  if (h.startsWith('Basic ')) {
+    const decoded = Buffer.from(h.slice(6), 'base64').toString('utf8');
+    const pw = decoded.slice(decoded.indexOf(':') + 1);
+    if (pw.length === PUBLIC_PASSWORD.length && require('crypto').timingSafeEqual(Buffer.from(pw), Buffer.from(PUBLIC_PASSWORD))) return next();
+  }
+  res.set('WWW-Authenticate', 'Basic realm="Football Squares", charset="UTF-8"');
+  res.status(401).type('text/plain').send('Password required');
+}
+app.use(publicAuth);
+
 app.get('/api/live', (req, res) => res.json(store.snapshot()));
 
 app.get('/api/state', (req, res) => res.json(store.state));

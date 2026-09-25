@@ -10,6 +10,8 @@
 		<string>8097</string>
 		<key>HOST</key>
 		<string>0.0.0.0</string>
+		<key>SQUARES_PASSWORD</key>
+		<string>CHANGE-ME</string>
 	</dict>
 	<key>ProgramArguments</key>
 	<array>

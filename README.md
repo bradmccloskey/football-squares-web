@@ -176,3 +176,10 @@ public/            tv.html + index.html + the shared renderer
 data/pool-2026.json   the pool sheet — the only file you ever need to edit
 test/              85 tests against recorded ESPN responses
 ```
+
+## Public access (added 2026-09-25)
+The app is reachable from the internet through the Cloudflare tunnel at https://squares.mccloskey-api.com
+(and https://squares.bradmccloskey.com once that zone has the CNAME `squares` → `87e54750-cd82-45e3-9db8-6b43c9ab324d.cfargotunnel.com`).
+Requests that arrive through the tunnel (they carry a `cf-ray` header) must present HTTP Basic auth with the
+shared password in `SQUARES_PASSWORD` (any username). LAN and tailnet requests are not challenged.
+The password lives in the LaunchAgent plist; change it there and `launchctl kickstart -k gui/502/com.claude.squares`.
