@@ -105,3 +105,21 @@ test('todayET reports the Eastern calendar date, not UTC', () => {
 test('espnDateParam formats the scoreboard query', () => {
   assert.strictEqual(p.espnDateParam('2026-09-20'), '20260920');
 });
+
+test('people: a trailing number marks another square of the same person', () => {
+  const pool = p.loadPool();
+  const owners = p.allOwners(pool);
+  const people = p.people(pool);
+  assert.equal(owners.length, 100);
+  assert.equal(people.length, 76);
+  assert.equal(people.reduce((s, p) => s + p.owners.length, 0), 100);
+  const dave = p.personFor(pool, 'dave');
+  assert.deepEqual(dave.owners, ['dave 1', 'dave 2', 'dave 3', 'dave 4']);
+  assert.equal(p.personFor(pool, 'DAVE 2').key, 'dave');
+  assert.equal(p.personFor(pool, 'dave b').owners.length, 1);       // different person
+  assert.equal(p.personFor(pool, 'carl/kurt/svenje 2').key, 'carl/kurt/svenje');
+  assert.notEqual(p.personFor(pool, 'carl 1').key, 'carl/kurt/svenje');
+  assert.equal(p.personFor(pool, 'zzz'), null);
+  assert.equal(p.squaresForPerson(pool, dave).length, 4);
+  assert.ok(p.squaresForPerson(pool, dave).every((q) => pool.owners[q.row][q.col] === q.owner));
+});

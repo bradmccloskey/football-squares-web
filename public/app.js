@@ -51,7 +51,7 @@
     if (!snap) return;
     document.getElementById('subtitle').textContent =
       'pool week ' + snap.state.week + (snap.state.week === snap.currentWeek ? ' (now)' : '') +
-      ' · ' + (snap.mySquare ? 'your square ' + snap.mySquare.away + '-' + snap.mySquare.home + ' · ' + S.money(snap.mySquare.winnings) : '');
+      ' · ' + (snap.mySquares && snap.mySquares.length ? (snap.me || 'you') + ': ' + snap.mySquares.map(function (q) { return q.away + '-' + q.home; }).join(' ') + ' · ' + S.money(snap.mySquare.winnings) : '');
 
     if (!held()) {
       weekSel.value = String(snap.state.week);

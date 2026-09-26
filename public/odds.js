@@ -8,6 +8,7 @@
   var weekSel = document.getElementById('week');
   var search = document.getElementById('search');
 
+  function personKey(n) { return String(n || '').trim().replace(/\s+/g, ' ').replace(/\s\d+$/, '').toLowerCase(); }
   function pct(p) { return (p * 100).toFixed(p * 100 >= 10 ? 1 : 2) + '%'; }
   function dollars(n) { return '$' + n.toFixed(2); }
   function label(m) { return m === 'half' ? 'halftime' : m === 'final' ? 'final' : 'expected $ per game'; }
@@ -29,9 +30,9 @@
   document.getElementById('clearbtn').addEventListener('click', function () { pick(null); });
   search.addEventListener('input', renderResults);
 
-  function owners() { return view ? view.leaderboard.map(function (r) { return r.owner; }).sort() : []; }
+  function owners() { return view ? view.people.map(function (r) { return r.person; }).sort() : []; }
   function pick(name) {
-    picked = name;
+    picked = name ? personKey(name) : null;
     search.value = '';
     renderResults();
     render();
@@ -89,7 +90,7 @@
         d.style.setProperty('--h', h.toFixed(3));
         d.appendChild(S.el('span', 'v', metric === 'expected' ? '$' + v.toFixed(0) : (v * 100).toFixed(1)));
         d.appendChild(S.el('span', 'o', cell.owner));
-        if (picked) d.classList.add(cell.owner === picked ? 'pick' : 'dimmed');
+        if (picked) d.classList.add(personKey(cell.owner) === picked ? 'pick' : 'dimmed');
         d.title = cell.owner + ' · ' + cell.away + '-' + cell.home + ' · half ' + pct(cell.half) + ' · final ' + pct(cell.final) + ' · ' + dollars(cell.expected) + '/game';
         d.addEventListener('click', (function (o) { return function () { pick(picked === o ? null : o); }; })(cell.owner));
         grid.appendChild(d);
@@ -103,23 +104,23 @@
     box.innerHTML = '';
     if (!picked) { box.appendChild(S.el('div', 'dimtext', 'Pick a name, tap Me, or tap a square.')); return; }
     var row = null;
-    view.leaderboard.forEach(function (r) { if (r.owner === picked) row = r; });
+    view.people.forEach(function (r) { if (r.person === picked) row = r; });
     if (!row) { box.appendChild(S.el('div', 'dimtext', 'No squares for ' + picked + '.')); return; }
     var who = S.el('div', 'who');
-    who.appendChild(S.el('span', 'nm', row.owner));
-    who.appendChild(S.el('span', 'rk', '#' + row.rank + ' of ' + view.leaderboard.length + ' this week'));
+    who.appendChild(S.el('span', 'nm', row.person));
+    who.appendChild(S.el('span', 'rk', '#' + row.rank + ' of ' + view.people.length + ' players this week' + (row.owners.length > 1 ? ' · ' + row.owners.length + ' squares' : '')));
     box.appendChild(who);
     var stats = S.el('div', 'stats');
     function stat(l, v, gold) { var s = S.el('div', 'stat'); s.appendChild(S.el('div', 'l', l)); s.appendChild(S.el('div', 'v mono' + (gold ? ' gold' : ''), v)); stats.appendChild(s); }
     stat('Halftime', pct(row.half));
     stat('Final', pct(row.final));
     stat('Per game', dollars(row.expected), true);
-    stat('Whole season', '$' + Math.round(view.season[row.owner] || 0), true);
+    stat('Whole season', '$' + Math.round(view.seasonPeople[row.person] || 0), true);
     box.appendChild(stats);
     var sqs = S.el('div', 'sqs');
     row.squares.forEach(function (s) {
       var sp = S.el('span', '');
-      sp.innerHTML = 'needs <b>' + s.away + '-' + s.home + '</b> · half ' + pct(s.half) + ' · final ' + pct(s.final);
+      sp.innerHTML = (row.owners.length > 1 ? S.esc(s.owner) + ' ' : '') + 'needs <b>' + s.away + '-' + s.home + '</b> · half ' + pct(s.half) + ' · final ' + pct(s.final);
       sqs.appendChild(sp);
     });
     box.appendChild(sqs);
@@ -129,17 +130,17 @@
     var lb = document.getElementById('lb');
     lb.innerHTML = '';
     ['#', 'Name', 'Half', 'Final', '$/game'].forEach(function (h) { lb.appendChild(S.el('div', 'h' + (h === '$/game' ? ' money' : ''), h)); });
-    var rows = view.leaderboard.slice();
-    if (metric !== 'expected') rows.sort(function (a, b) { return b[metric] - a[metric] || a.owner.localeCompare(b.owner); });
+    var rows = view.people.slice();
+    if (metric !== 'expected') rows.sort(function (a, b) { return b[metric] - a[metric] || a.person.localeCompare(b.person); });
     var top = rows.slice(0, 10);
-    if (picked && !top.some(function (r) { return r.owner === picked; })) {
-      rows.forEach(function (r, i) { if (r.owner === picked) { r._pos = i + 1; top.push(r); } });
+    if (picked && !top.some(function (r) { return r.person === picked; })) {
+      rows.forEach(function (r, i) { if (r.person === picked) { r._pos = i + 1; top.push(r); } });
     }
     top.forEach(function (r, i) {
-      var me = r.owner === picked;
+      var me = r.person === picked;
       lb.appendChild(S.el('div', 'r', String(r._pos || i + 1)));
-      var n = S.el('div', 'n' + (me ? ' me' : ''), r.owner);
-      n.addEventListener('click', function () { pick(r.owner); });
+      var n = S.el('div', 'n' + (me ? ' me' : ''), r.person + (r.owners.length > 1 ? ' (' + r.owners.length + ')' : ''));
+      n.addEventListener('click', function () { pick(r.person); });
       lb.appendChild(n);
       lb.appendChild(S.el('div', 'mono', pct(r.half)));
       lb.appendChild(S.el('div', 'mono', pct(r.final)));

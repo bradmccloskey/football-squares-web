@@ -41,47 +41,52 @@ test('tunnel requests with the wrong password stay locked', async () => {
   assert.equal(r2.status, 401);
 });
 
-test('tunnel requests need an owner name from the grid as the username', async () => {
-  const owner = pool.owners[0][0];
+test('tunnel requests need a grid name (number optional) as the username; the person becomes "me"', async () => {
   const auth = (u, pw) => 'Basic ' + Buffer.from(u + ':' + pw).toString('base64');
-  // right password, made-up name: refused
+  const dave = pooling.personFor(pool, 'dave 1');
+  assert.ok(dave && dave.owners.length >= 2, 'fixture: dave holds several squares');
+  // right password, made-up name: refused; no name: refused
   let r = await fetch(base + '/api/live', { headers: { 'cf-ray': 'abc-IAD', authorization: auth('nobody-here', 'hut-hut') } });
   assert.equal(r.status, 401);
-  // no name at all: refused
   r = await fetch(base + '/api/live', { headers: { 'cf-ray': 'abc-IAD', authorization: basic('hut-hut') } });
   assert.equal(r.status, 401);
-  // a grid name: in, and it becomes "me" everywhere
-  r = await fetch(base + '/api/live', { headers: { 'cf-ray': 'abc-IAD', authorization: auth(owner, 'hut-hut') } });
-  assert.equal(r.status, 200);
-  const live = await r.json();
-  assert.equal(live.mySquare.owner, owner);
-  assert.deepEqual({ row: live.mySquare.row, col: live.mySquare.col }, pooling.squaresFor(pool, owner)[0]);
-  r = await fetch(base + '/api/odds', { headers: { 'cf-ray': 'abc-IAD', authorization: auth(owner, 'hut-hut') } });
-  assert.equal((await r.json()).me, owner);
-  r = await fetch(base + '/api/owners', { headers: { 'cf-ray': 'abc-IAD', authorization: auth(owner, 'hut-hut') } });
-  assert.equal((await r.json()).me, owner);
-  // case and spacing do not matter; a shared square logs in with its full string
-  r = await fetch(base + '/tv', { headers: { 'cf-ray': 'abc-IAD', authorization: auth('  ' + owner.toUpperCase() + ' ', 'hut-hut') } });
-  assert.equal(r.status, 200);
+  // "dave 1", "DAVE 3" and plain "dave" all sign in as the person dave, with every dave square
+  for (const u of ['dave 1', '  DAVE 3 ', 'dave']) {
+    r = await fetch(base + '/api/live', { headers: { 'cf-ray': 'abc-IAD', authorization: auth(u, 'hut-hut') } });
+    assert.equal(r.status, 200, u);
+    const live = await r.json();
+    assert.equal(live.me, 'dave', u);
+    assert.equal(live.mySquares.length, pooling.squaresForPerson(pool, dave).length, u);
+    assert.deepEqual(live.mySquares.map((q) => q.owner).sort(), pooling.squaresForPerson(pool, dave).map((q) => q.owner).sort());
+  }
+  r = await fetch(base + '/api/odds', { headers: { 'cf-ray': 'abc-IAD', authorization: auth('dave 2', 'hut-hut') } });
+  const v = await r.json();
+  assert.equal(v.me, 'dave');
+  assert.deepEqual(v.meOwners, dave.owners);
+  // a shared square is its own player, and half of it is not a login
   const shared = pooling.allOwners(pool).find((o) => o.includes('/'));
   r = await fetch(base + '/odds', { headers: { 'cf-ray': 'abc-IAD', authorization: auth(shared, 'hut-hut') } });
   assert.equal(r.status, 200);
-  // one half of a shared square is not a login on its own
   r = await fetch(base + '/odds', { headers: { 'cf-ray': 'abc-IAD', authorization: auth(shared.split('/')[0], 'hut-hut') } });
   assert.equal(r.status, 401);
+  // a single-square owner without a number is still just themselves
+  const single = pooling.people(pool).find((p) => p.owners.length === 1 && !/\d$/.test(p.owners[0]) && !p.owners[0].includes('/'));
+  r = await fetch(base + '/api/owners', { headers: { 'cf-ray': 'abc-IAD', authorization: auth(single.name.toUpperCase(), 'hut-hut') } });
+  assert.equal((await r.json()).me, single.name);
 });
 
 test('LAN requests stay open and "me" stays Brad', async () => {
   const r = await fetch(base + '/api/odds');
   assert.equal(r.status, 200);
-  assert.equal((await r.json()).me, pooling.BRAD);
+  assert.equal((await r.json()).me, pooling.personFor(pool, pooling.BRAD).name);
   const live = await (await fetch(base + '/api/live')).json();
   assert.equal(live.mySquare.owner, pooling.BRAD);
 });
 
-test('ownerForUsername resolves grid names only', () => {
-  assert.equal(ownerForUsername(pool.owners[3][4]), pool.owners[3][4]);
-  assert.equal(ownerForUsername(' ' + pool.owners[3][4].toUpperCase()), pool.owners[3][4]);
+test('ownerForUsername resolves grid names (number optional) to the person', () => {
+  assert.equal(ownerForUsername('dave 4'), 'dave');
+  assert.equal(ownerForUsername(' Dave '), 'dave');
+  assert.equal(ownerForUsername('dave b'), 'dave b');
   assert.equal(ownerForUsername('not a player'), null);
   assert.equal(ownerForUsername(''), null);
 });

@@ -25,14 +25,13 @@ app.use((req, res, next) => { res.set('Cache-Control', 'no-store'); next(); });
 
 // Shared password for the public hostname. Only requests that arrived through
 // the Cloudflare tunnel carry a cf-ray header, so the LAN, the tailnet and the
-// basement iPad keep working without a prompt. The USERNAME must be one of the
-// owner names exactly as written in the grid (case and surrounding spaces do not
-// matter; a shared square logs in with its full "pete/todd" string). Whoever
-// logs in is "me" for the board, the Odds page and the Rankings page.
+// basement iPad keep working without a prompt. The USERNAME must be a name from
+// the grid, or that name without its trailing number: "dave 1", "DAVE 3" and
+// "dave" all sign in as the person dave, who holds every "dave N" square (a
+// shared square like "pete/todd" is its own player). Whoever logs in is "me"
+// for the board, the Odds page and the Rankings page.
 const PUBLIC_PASSWORD = process.env.SQUARES_PASSWORD || '';
-const OWNER_BY_KEY = new Map(pooling.allOwners(pool).map((o) => [ownerKey(o), o]));
-function ownerKey(name) { return String(name || '').trim().replace(/\s+/g, ' ').toLowerCase(); }
-function ownerForUsername(name) { return OWNER_BY_KEY.get(ownerKey(name)) || null; }
+function ownerForUsername(name) { const p = pooling.personFor(pool, name); return p ? p.name : null; }
 function publicAuth(req, res, next) {
   if (!PUBLIC_PASSWORD || !req.get('cf-ray')) return next();
   const h = req.get('authorization') || '';
@@ -46,12 +45,12 @@ function publicAuth(req, res, next) {
     if (owner && pwOk) { req.squaresUser = owner; return next(); }
   }
   res.set('WWW-Authenticate', 'Basic realm="Football Squares: your name from the grid + the pool password", charset="UTF-8"');
-  res.status(401).type('text/plain').send('Sign in with your name exactly as it appears on the squares grid, and the pool password.');
+  res.status(401).type('text/plain').send('Sign in with your name as it appears on the squares grid (the number after it is optional), and the pool password.');
 }
 app.use(publicAuth);
 
 /** Who "me" is for this request: the logged-in owner on the public host, Brad on the LAN. */
-function meFor(req) { return req.squaresUser || pooling.BRAD; }
+function meFor(req) { return req.squaresUser || pooling.personFor(pool, pooling.BRAD).name; }
 
 app.get('/api/live', (req, res) => res.json(store.snapshot(Date.now(), meFor(req))));
 

@@ -30,12 +30,12 @@ exact match. `data/odds-2014-2025.json` holds the four tables (Q1, half, Q3,
 final), keyed `home-away`.
 
 - Pick a week, then Halftime / Final / $ per game. Brighter gold = hits more often.
-- Search a name, tap **Me**, or tap any square: that owner's squares light up and
+- Search a player, tap **Me**, or tap any square: every square that player holds lights up (dave 1, 2 and 3 together) and
   everything else dims, with their summed halftime and final odds, expected $ per
-  game ($150 × half + $150 × final), their rank among the 100 owners this week, and
+  game ($150 × half + $150 × final), their rank among the 76 players this week, and
   their expected winnings over the whole 64-game pool.
-- "Best draws this week" lists the top 10 owners (plus you if you are not in it).
-- `/rankings` (the **Rankings** button) is the full list: all 100 owners for the
+- "Best players this week" lists the top 10 players (plus you if you are not in it).
+- `/rankings` (the **Rankings** button) is the full list: all 76 players for the
   week, sortable by halftime, final, $ per game or whole-season $, with a name
   filter; tap a name to open their squares on the odds grid.
 
@@ -206,9 +206,11 @@ test/              85 tests against recorded ESPN responses
 The app is reachable from the internet through the Cloudflare tunnel at https://squares.mccloskey-api.com
 (and https://squares.bradmccloskey.com once that zone has the CNAME `squares` → `87e54750-cd82-45e3-9db8-6b43c9ab324d.cfargotunnel.com`).
 Requests that arrive through the tunnel (they carry a `cf-ray` header) must present HTTP Basic auth with the
-shared password in `SQUARES_PASSWORD`. The **username is your name exactly as it appears
-on the grid** (case and spaces do not matter; a shared square signs in with its full
-`pete/todd` string); any other name is refused. Whoever signs in is "me": their square on
+shared password in `SQUARES_PASSWORD`. The **username is your name as it appears on the
+grid**, with or without the trailing number: `dave 1`, `DAVE 3` and `dave` all sign in as
+dave, who holds every `dave N` square (a trailing number marks another square of the same
+person; a shared square signs in with its full `pete/todd` string and is its own player).
+Any other name is refused. Whoever signs in is "me": their square on
 the board, the **Me** button on the Odds page and the highlighted row on Rankings. LAN and
 tailnet requests are not challenged and "me" is Brad there.
 The committed `com.claude.squares.plist` carries the placeholder `CHANGE-ME`; the real value lives only in the installed copy under `~/Library/LaunchAgents/`.

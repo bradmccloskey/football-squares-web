@@ -29,17 +29,17 @@
     render();
   }
 
-  function value(r) { return sortBy === 'season' ? (view.season[r.owner] || 0) : r[sortBy]; }
+  function value(r) { return sortBy === 'season' ? (view.seasonPeople[r.person] || 0) : r[sortBy]; }
 
   function render() {
     if (!view) return;
     var w = view.week;
     document.getElementById('subtitle').textContent = 'pool week ' + w.number + (w.number === view.currentWeek ? ' (now)' : '') + ' · ' + w.gameCount + ' game' + (w.gameCount === 1 ? '' : 's');
-    var rows = view.leaderboard.slice().sort(function (a, b) { return value(b) - value(a) || a.owner.localeCompare(b.owner); });
+    var rows = view.people.slice().sort(function (a, b) { return value(b) - value(a) || a.person.localeCompare(b.person); });
     rows.forEach(function (r, i) { r._rank = i + 1; });
     var q = filter.value.trim().toLowerCase();
-    var shown = q ? rows.filter(function (r) { return r.owner.toLowerCase().indexOf(q) >= 0; }) : rows;
-    document.getElementById('title').textContent = (q ? shown.length + ' of ' : 'All ') + rows.length + ' owners · by ' + label(sortBy);
+    var shown = q ? rows.filter(function (r) { return r.person.toLowerCase().indexOf(q) >= 0; }) : rows;
+    document.getElementById('title').textContent = (q ? shown.length + ' of ' : 'All ') + rows.length + ' players · by ' + label(sortBy);
 
     var t = document.getElementById('tbl');
     t.innerHTML = '';
@@ -52,24 +52,24 @@
     t.appendChild(head);
     shown.forEach(function (r) {
       var tr = document.createElement('tr');
-      if (r.owner === view.me) tr.className = 'me';
+      if (r.person === view.me) tr.className = 'me';
       if (r._rank <= 10) tr.className += ' top';
       tr.appendChild(S.el('td', 'r mono', String(r._rank)));
       var n = S.el('td', 'n');
-      var a = S.el('a', '', r.owner);
+      var a = S.el('a', '', r.person + (r.owners.length > 1 ? ' (' + r.owners.length + ')' : ''));
       a.href = '/odds';
-      a.addEventListener('click', function () { try { localStorage.setItem('squares-odds-pick', r.owner); } catch (e) {} });
+      a.addEventListener('click', function () { try { localStorage.setItem('squares-odds-pick', r.person); } catch (e) {} });
       n.appendChild(a);
       tr.appendChild(n);
       tr.appendChild(S.el('td', 'sq hide-sm', r.squares.map(function (s) { return s.away + '-' + s.home; }).join(' ')));
       tr.appendChild(S.el('td', 'num mono', pct(r.half)));
       tr.appendChild(S.el('td', 'num mono', pct(r.final)));
       tr.appendChild(S.el('td', 'num mono', dollars(r.expected)));
-      tr.appendChild(S.el('td', 'num mono', '$' + Math.round(view.season[r.owner] || 0)));
+      tr.appendChild(S.el('td', 'num mono', '$' + Math.round(view.seasonPeople[r.person] || 0)));
       t.appendChild(tr);
     });
     document.getElementById('foot').textContent =
-      'Odds from every NFL game ' + view.seasons[0] + ' to ' + view.seasons[1] + ' (' + view.games.toLocaleString('en-US') + ' games). Half and Final are the summed chance of that owner\'s squares hitting in one game under this week\'s digits; $/game = ' +
+      'Odds from every NFL game ' + view.seasons[0] + ' to ' + view.seasons[1] + ' (' + view.games.toLocaleString('en-US') + ' games). A player is every grid name that differs only by its trailing number (dave 1, dave 2, dave 3). Half and Final are the summed chance of that player\'s squares hitting in one game under this week\'s digits; $/game = ' +
       view.payout.halftime + ' × half + ' + view.payout.final + ' × final; Season $ adds every pool game (' + view.totalGames + ') under each week\'s own digits, so it does not change with the week picked. Tap a name to see their squares on the grid. History, not a promise.';
   }
 

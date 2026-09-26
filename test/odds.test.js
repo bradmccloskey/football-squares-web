@@ -73,6 +73,21 @@ test('seasonExpected adds every week by its game count', () => {
   assert.ok(s.total > 0);
 });
 
+test('people leaderboard sums a person\'s squares and still pays out $300 per game', () => {
+  const week = pool.weeks['2'];
+  const dave = pooling.personFor(pool, 'dave');
+  const p = odds.personOdds(pool, O, week, dave);
+  const bySquares = dave.owners.reduce((s, o) => s + odds.ownerOdds(pool, O, week, o).expected, 0);
+  assert.ok(Math.abs(p.expected - bySquares) < 1e-9);
+  assert.equal(p.squares.length, 4);
+  const lb = odds.peopleLeaderboard(pool, O, week);
+  assert.equal(lb.length, 76);
+  lb.forEach((r, i) => assert.equal(r.rank, i + 1));
+  assert.ok(Math.abs(lb.reduce((s, r) => s + r.expected, 0) - 300) < 1e-6);
+  const season = odds.seasonExpectedPerson(pool, O, dave);
+  assert.ok(Math.abs(season - dave.owners.reduce((s, o) => s + odds.seasonExpected(pool, O, o).total, 0)) < 1e-9);
+});
+
 test('weekView carries a 10x10 grid whose cells name the owner at that square', () => {
   const v = odds.weekView(pool, O, pool.weeks['1'], { currentWeek: 3 });
   assert.equal(v.grid.length, 10);
@@ -80,6 +95,8 @@ test('weekView carries a 10x10 grid whose cells name the owner at that square', 
   assert.equal(v.week.number, 1);
   assert.equal(v.currentWeek, 3);
   assert.equal(v.me, pooling.BRAD);
+  assert.deepEqual(v.meOwners, [pooling.BRAD]);
+  assert.equal(v.people.length, 76);
   assert.deepEqual(v.weeks, pool.weekNumbers);
 });
 
