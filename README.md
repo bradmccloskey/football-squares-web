@@ -35,6 +35,9 @@ final), keyed `home-away`.
   game ($150 × half + $150 × final), their rank among the 100 owners this week, and
   their expected winnings over the whole 64-game pool.
 - "Best draws this week" lists the top 10 owners (plus you if you are not in it).
+- `/rankings` (the **Rankings** button) is the full list: all 100 owners for the
+  week, sortable by halftime, final, $ per game or whole-season $, with a name
+  filter; tap a name to open their squares on the odds grid.
 
 `GET /api/odds?week=N` returns the grid, the leaderboard and the season totals; the
 math lives in `lib/odds.js` and is covered by `test/odds.test.js`. A random square is

@@ -105,5 +105,8 @@ test('GET /api/odds serves the current week by default, a chosen week, and 404 f
     assert.equal(r.status, 200);
     const html = await r.text();
     assert.ok(html.includes('Squares odds'));
+    r = await fetch(base + '/rankings');
+    assert.equal(r.status, 200);
+    assert.ok((await r.text()).includes('Squares rankings'));
   } finally { server.close(); }
 });

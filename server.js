@@ -89,6 +89,7 @@ app.get('/api/health', (req, res) => {
 app.use(express.static(path.join(__dirname, 'public'), { etag: false, maxAge: 0 }));
 app.get('/tv', (req, res) => res.sendFile(path.join(__dirname, 'public', 'tv.html')));
 app.get('/odds', (req, res) => res.sendFile(path.join(__dirname, 'public', 'odds.html')));
+app.get('/rankings', (req, res) => res.sendFile(path.join(__dirname, 'public', 'rankings.html')));
 
 if (require.main === module) {
   const restored = store.load();
