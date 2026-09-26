@@ -19,6 +19,28 @@ One screen for the basement TV, one for your phone. The phone drives the TV.
 No login. It is reachable only from the house LAN and the tailnet, and the
 board shows first names only.
 
+## Odds tab
+
+`/odds` (the **Odds** button on the phone page) shows how often an NFL game has
+actually ended a period on each square, under the digits of the week you pick.
+The numbers come from every game from 2014 through the 2025 Super Bowl (3,295
+games, nflverse play-by-play; halftime = end of the 2nd quarter, final includes
+overtime) and were recomputed independently by Marion on 2026-09-26 with an
+exact match. `data/odds-2014-2025.json` holds the four tables (Q1, half, Q3,
+final), keyed `home-away`.
+
+- Pick a week, then Halftime / Final / $ per game. Brighter gold = hits more often.
+- Search a name, tap **Me**, or tap any square: that owner's squares light up and
+  everything else dims, with their summed halftime and final odds, expected $ per
+  game ($150 × half + $150 × final), their rank among the 100 owners this week, and
+  their expected winnings over the whole 64-game pool.
+- "Best draws this week" lists the top 10 owners (plus you if you are not in it).
+
+`GET /api/odds?week=N` returns the grid, the leaderboard and the season totals; the
+math lives in `lib/odds.js` and is covered by `test/odds.test.js`. A random square is
+1% by definition; the best labeled square (home 7, visitor 0) is about 6% at half and
+4% at final, and 8/2 has never hit at halftime in 27 seasons.
+
 ## Getting it on the TV
 
 Two ways, either is fine:

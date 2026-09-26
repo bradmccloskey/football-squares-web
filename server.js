@@ -3,12 +3,14 @@ const path = require('path');
 const express = require('express');
 const pooling = require('./lib/pool');
 const { Store } = require('./lib/store');
+const odds = require('./lib/odds');
 
 const PORT = Number(process.env.PORT || 8097);
 const HOST = process.env.HOST || '0.0.0.0';
 
 const pool = pooling.loadPool();
 const store = new Store(pool);
+const ODDS = odds.loadOdds();
 
 const app = express();
 app.use(express.json({ limit: '32kb' }));
@@ -48,6 +50,15 @@ app.post('/api/state', (req, res) => {
 
 app.get('/api/owners', (req, res) => res.json({ owners: pooling.allOwners(pool) }));
 
+// Historical odds for every square under one week's digits, plus the owner
+// leaderboard. Defaults to the week the phone page is on.
+app.get('/api/odds', (req, res) => {
+  const wk = req.query.week != null ? Number(req.query.week) : store.state.week;
+  const week = pool.weeks[String(wk)];
+  if (!week) return res.status(404).json({ error: `no pool week ${req.query.week}` });
+  res.json(odds.weekView(pool, ODDS, week, { currentWeek: pooling.currentPoolWeek(pool) }));
+});
+
 app.get('/api/season', async (req, res) => {
   if (req.query.refresh === '1') await store.refreshSeason();
   res.json({
@@ -77,6 +88,7 @@ app.get('/api/health', (req, res) => {
 
 app.use(express.static(path.join(__dirname, 'public'), { etag: false, maxAge: 0 }));
 app.get('/tv', (req, res) => res.sendFile(path.join(__dirname, 'public', 'tv.html')));
+app.get('/odds', (req, res) => res.sendFile(path.join(__dirname, 'public', 'odds.html')));
 
 if (require.main === module) {
   const restored = store.load();

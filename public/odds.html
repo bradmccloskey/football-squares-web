@@ -1,0 +1,101 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<title>Squares odds</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 16 16%27%3E%3Crect width=%2716%27 height=%2716%27 fill=%27%230a0e14%27/%3E%3Cg fill=%27none%27 stroke=%27%23ffd23f%27 stroke-width=%271%27%3E%3Crect x=%272%27 y=%272%27 width=%2712%27 height=%2712%27/%3E%3Cpath d=%27M6 2v12M10 2v12M2 6h12M2 10h12%27/%3E%3C/g%3E%3Crect x=%276%27 y=%276%27 width=%274%27 height=%274%27 fill=%27%23ffd23f%27/%3E%3C/svg%3E">
+<link rel="stylesheet" href="/style.css">
+<style>
+  body { --cell: max(24px, calc((100vw - 80px) / 11)); padding: 0 0 40px; }
+  @media (min-width: 760px) { body { --cell: 64px; } }
+  html { overflow-x: clip; } body { overflow-x: clip; width: 100%; max-width: 100vw; touch-action: pan-y pinch-zoom; }
+  .wrap { max-width: 900px; margin: 0 auto; padding: 10px 12px env(safe-area-inset-bottom); }
+  h1 { font-size: 19px; margin: 6px 0 2px; letter-spacing: .02em; }
+  h1 .sub { color: var(--dim); font-weight: 500; font-size: 13px; }
+  h1 a { color: var(--gold); text-decoration: none; font-size: 13px; margin-left: 10px; font-weight: 700; }
+  .card { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 12px; margin: 10px 0; max-width: 100%; min-width: 0; }
+  .card h2 { margin: 0 0 9px; font-size: 11px; letter-spacing: .14em; text-transform: uppercase; color: var(--dim); font-weight: 800; }
+  .row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; max-width: 100%; }
+  .row > * { min-width: 0; max-width: 100%; }
+  select, input[type=search], button { font: inherit; color: var(--text); background: var(--panel2); border: 1px solid var(--line); border-radius: 9px; padding: 9px 11px; -webkit-appearance: none; appearance: none; }
+  select { background-image: linear-gradient(45deg, transparent 50%, var(--dim) 50%), linear-gradient(135deg, var(--dim) 50%, transparent 50%); background-position: calc(100% - 16px) 50%, calc(100% - 11px) 50%; background-size: 5px 5px, 5px 5px; background-repeat: no-repeat; padding-right: 30px; }
+  button { cursor: pointer; font-weight: 700; }
+  .chipbar { display: flex; gap: 6px; flex-wrap: wrap; }
+  .chip { padding: 6px 10px; border-radius: 999px; border: 1px solid var(--line); background: var(--panel2); font-size: 13px; font-weight: 700; cursor: pointer; }
+  .chip.on { background: var(--gold); color: #12160c; border-color: var(--gold); }
+  .results { max-height: 210px; overflow-y: auto; -webkit-overflow-scrolling: touch; border: 1px solid var(--line); border-radius: 9px; margin-top: 8px; }
+  .results div { padding: 10px 12px; border-bottom: 1px solid var(--line); font-size: 15px; cursor: pointer; }
+  .results div:last-child { border-bottom: 0; }
+  #boardscroll { overflow-x: auto; -webkit-overflow-scrolling: touch; max-width: 100%; }
+  .gridwrap { --cell: max(24px, calc((100vw - 80px) / 11)); }
+  @media (min-width: 760px) { .gridwrap { --cell: 64px; } }
+  /* Heat cells: gold intensity = odds. --h is 0..1 relative to the best square on the board. */
+  .cell.heat { background: color-mix(in srgb, var(--gold) calc(var(--h) * 78%), var(--panel)); color: #e8eef5; font-weight: 800; font-size: max(7px, calc(var(--cell) * 0.24)); flex-direction: column; gap: 1px; }
+  .cell.heat .o { font-weight: 600; font-size: max(5px, calc(var(--cell) * 0.13)); color: #c3cedbcc; line-height: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
+  .cell.heat.hot { color: #12160c; } .cell.heat.hot .o { color: #12160cb0; }
+  .cell.heat.pick { box-shadow: inset 0 0 0 3px var(--mine), 0 0 0 2px #0a0e14, 0 0 18px 2px rgba(255,138,61,.55); z-index: 2; }
+  .cell.heat.dimmed { opacity: .38; }
+  .taphint { font-size: 12px; color: var(--dim); margin-top: 6px; }
+  .who { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; }
+  .who .nm { font-size: 22px; font-weight: 900; }
+  .who .rk { color: var(--dim); font-weight: 700; }
+  .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 8px; margin: 10px 0 6px; }
+  .stat { background: var(--panel2); border: 1px solid var(--line); border-radius: 9px; padding: 8px 10px; }
+  .stat .l { font-size: 11px; letter-spacing: .1em; text-transform: uppercase; color: var(--dim); font-weight: 800; }
+  .stat .v { font-size: 22px; font-weight: 900; }
+  .stat .v.gold { color: var(--gold); }
+  .sqs { display: flex; flex-wrap: wrap; gap: 6px 14px; font-size: 14px; }
+  .sqs span b { color: var(--gold); }
+  .lb { display: grid; grid-template-columns: 34px 1fr auto auto auto; gap: 4px 10px; font-size: 14px; align-items: baseline; }
+  .lb div { padding: 5px 0; border-bottom: 1px solid var(--line); }
+  .lb .h { color: var(--dim); font-size: 11px; letter-spacing: .1em; text-transform: uppercase; font-weight: 800; }
+  .lb .n { font-weight: 800; cursor: pointer; }
+  .lb .r { color: var(--dim); }
+  .lb .me { color: var(--gold); }
+  .lb .money { text-align: right; }
+  .foot { font-size: 12px; color: var(--dim); line-height: 1.5; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Squares odds <span class="sub" id="subtitle"></span><a href="/">&larr; board</a></h1>
+
+  <div class="card">
+    <h2>Week &amp; period</h2>
+    <div class="row">
+      <select id="week"></select>
+      <div class="chipbar" id="metric">
+        <span class="chip on" data-m="half">Halftime</span>
+        <span class="chip" data-m="final">Final</span>
+        <span class="chip" data-m="expected">$ per game</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>Whose squares</h2>
+    <div class="row">
+      <input type="search" id="search" placeholder="Search the 100 names…" autocomplete="off" autocorrect="off" spellcheck="false" style="flex:1 1 200px">
+      <button class="ghost" id="mebtn">Me</button>
+      <button class="ghost" id="clearbtn">Clear</button>
+    </div>
+    <div class="results" id="results" style="display:none"></div>
+    <div id="pick" style="margin-top:10px"></div>
+  </div>
+
+  <div class="card">
+    <h2 id="gridtitle">Odds by square</h2>
+    <div id="boardscroll"><div id="board" class="gridwrap"></div></div>
+    <div class="taphint">Tap a square to light up everything its owner holds. Brighter gold = hits more often. Rows are the visitor digits, columns the home digits, for the week shown.</div>
+  </div>
+
+  <div class="card"><h2 id="lbtitle">Best draws this week</h2><div class="lb" id="lb"></div></div>
+
+  <div class="card"><div class="foot" id="foot"></div></div>
+</div>
+<script src="/common.js"></script>
+<script src="/odds.js"></script>
+</body>
+</html>
