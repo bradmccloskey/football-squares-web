@@ -25,22 +25,35 @@ app.use((req, res, next) => { res.set('Cache-Control', 'no-store'); next(); });
 
 // Shared password for the public hostname. Only requests that arrived through
 // the Cloudflare tunnel carry a cf-ray header, so the LAN, the tailnet and the
-// basement iPad keep working without a prompt. Any username is accepted.
+// basement iPad keep working without a prompt. The USERNAME must be one of the
+// owner names exactly as written in the grid (case and surrounding spaces do not
+// matter; a shared square logs in with its full "pete/todd" string). Whoever
+// logs in is "me" for the board, the Odds page and the Rankings page.
 const PUBLIC_PASSWORD = process.env.SQUARES_PASSWORD || '';
+const OWNER_BY_KEY = new Map(pooling.allOwners(pool).map((o) => [ownerKey(o), o]));
+function ownerKey(name) { return String(name || '').trim().replace(/\s+/g, ' ').toLowerCase(); }
+function ownerForUsername(name) { return OWNER_BY_KEY.get(ownerKey(name)) || null; }
 function publicAuth(req, res, next) {
   if (!PUBLIC_PASSWORD || !req.get('cf-ray')) return next();
   const h = req.get('authorization') || '';
   if (h.startsWith('Basic ')) {
     const decoded = Buffer.from(h.slice(6), 'base64').toString('utf8');
-    const pw = decoded.slice(decoded.indexOf(':') + 1);
-    if (pw.length === PUBLIC_PASSWORD.length && require('crypto').timingSafeEqual(Buffer.from(pw), Buffer.from(PUBLIC_PASSWORD))) return next();
+    const colon = decoded.indexOf(':');
+    const user = colon < 0 ? decoded : decoded.slice(0, colon);
+    const pw = colon < 0 ? '' : decoded.slice(colon + 1);
+    const owner = ownerForUsername(user);
+    const pwOk = pw.length === PUBLIC_PASSWORD.length && require('crypto').timingSafeEqual(Buffer.from(pw), Buffer.from(PUBLIC_PASSWORD));
+    if (owner && pwOk) { req.squaresUser = owner; return next(); }
   }
-  res.set('WWW-Authenticate', 'Basic realm="Football Squares", charset="UTF-8"');
-  res.status(401).type('text/plain').send('Password required');
+  res.set('WWW-Authenticate', 'Basic realm="Football Squares: your name from the grid + the pool password", charset="UTF-8"');
+  res.status(401).type('text/plain').send('Sign in with your name exactly as it appears on the squares grid, and the pool password.');
 }
 app.use(publicAuth);
 
-app.get('/api/live', (req, res) => res.json(store.snapshot()));
+/** Who "me" is for this request: the logged-in owner on the public host, Brad on the LAN. */
+function meFor(req) { return req.squaresUser || pooling.BRAD; }
+
+app.get('/api/live', (req, res) => res.json(store.snapshot(Date.now(), meFor(req))));
 
 app.get('/api/state', (req, res) => res.json(store.state));
 
@@ -48,7 +61,7 @@ app.post('/api/state', (req, res) => {
   res.json(store.setState(req.body || {}));
 });
 
-app.get('/api/owners', (req, res) => res.json({ owners: pooling.allOwners(pool) }));
+app.get('/api/owners', (req, res) => res.json({ owners: pooling.allOwners(pool), me: meFor(req) }));
 
 // Historical odds for every square under one week's digits, plus the owner
 // leaderboard. Defaults to the week the phone page is on.
@@ -56,7 +69,7 @@ app.get('/api/odds', (req, res) => {
   const wk = req.query.week != null ? Number(req.query.week) : store.state.week;
   const week = pool.weeks[String(wk)];
   if (!week) return res.status(404).json({ error: `no pool week ${req.query.week}` });
-  res.json(odds.weekView(pool, ODDS, week, { currentWeek: pooling.currentPoolWeek(pool) }));
+  res.json(odds.weekView(pool, ODDS, week, { currentWeek: pooling.currentPoolWeek(pool), me: meFor(req) }));
 });
 
 app.get('/api/season', async (req, res) => {
@@ -101,4 +114,4 @@ if (require.main === module) {
   });
 }
 
-module.exports = { app, store, pool };
+module.exports = { app, store, pool, ownerForUsername };
