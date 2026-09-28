@@ -19,13 +19,14 @@ test('odds tables have 100 pairs each and sum to 100%', () => {
     const sum = Object.values(t).reduce((s, v) => s + v, 0);
     assert.ok(Math.abs(sum - 1) < 1e-9, `${name} sums to ${sum}`);
   }
-  assert.equal(O.games, 3295);
+  assert.equal(O.games, 7273);
 });
 
-test('the well-known facts hold: 7-0 is the best final square and 8-2 never hit at halftime', () => {
+test('the well-known facts hold: 0/7 is the best final pair and 8-2 never hit at halftime', () => {
   const half = O.tables.half; const fin = O.tables.final;
   const best = Object.keys(fin).sort((a, b) => fin[b] - fin[a])[0];
-  assert.equal(best, '7-0');
+  // Which side of 0/7 wins the ordered race depends on the span: 7-0 on 2014-2025, 0-7 on 1999-2025.
+  assert.ok(best === '7-0' || best === '0-7', `best final square was ${best}`);
   assert.equal(half['8-2'], 0);
   assert.equal(half['2-8'], 0);
   assert.ok(half['7-3'] + half['3-7'] > 0.08);
